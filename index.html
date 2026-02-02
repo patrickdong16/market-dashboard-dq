@@ -416,7 +416,7 @@
                 const hash = window.location.hash.slice(1);
                 
                 if (hash.startsWith('/detail/')) {
-                    const symbol = hash.replace('/detail/', '');
+                    const symbol = decodeURIComponent(hash.replace('/detail/', ''));
                     this.showDetail(symbol);
                 } else {
                     this.showList();
@@ -708,12 +708,34 @@
                 }
             }
 
-            showDetail(symbol) {
+            async showDetail(symbol) {
                 document.getElementById('listView').classList.remove('active');
                 document.getElementById('detailView').classList.add('active');
                 document.getElementById('backButton').style.display = 'block';
                 
                 this.currentSymbol = symbol;
+
+                // If data not loaded yet, fetch it
+                if (!this.data.has(symbol)) {
+                    try {
+                        const resp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
+                        if (resp.ok) {
+                            const chartData = await resp.json();
+                            const points = chartData.data || [];
+                            if (points.length > 0) {
+                                const latest = points[points.length - 1];
+                                const prevClose = points.length > 1 ? points[points.length - 2].close : latest.open;
+                                const price = latest.close;
+                                const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+                                this.data.set(symbol, {
+                                    price, change_pct: Math.round(change_pct * 10000) / 10000,
+                                    prev_close: prevClose, sparkline: []
+                                });
+                            }
+                        }
+                    } catch (e) { console.warn('Detail fetch failed:', e); }
+                }
+
                 this.updateDetailHeader(symbol);
                 this.loadChart(symbol, '3mo');
             }
