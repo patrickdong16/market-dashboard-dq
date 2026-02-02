@@ -412,6 +412,7 @@
                 <button class="time-range-button" data-range="1d">今日</button>
                 <button class="time-range-button active" data-range="3mo">3M</button>
                 <button class="time-range-button" data-range="1y">1Y</button>
+                <span id="tzLabel" style="font-size:0.7rem;color:#999;margin-left:8px;display:none;">ET</span>
             </div>
             
             <div class="chart-container" id="chartContainer">
@@ -424,7 +425,7 @@
     </div>
 
     <!-- TradingView Lightweight Charts -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js"></script>
     
     <script>
         // Configuration - Auto-detect environment
@@ -781,6 +782,8 @@
                 document.querySelectorAll('.time-range-button').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.range === '3mo');
                 });
+                const tzLabel = document.getElementById('tzLabel');
+                if (tzLabel) tzLabel.style.display = 'none';
 
                 // If data not loaded yet, fetch real-time quote
                 if (!this.data.has(symbol)) {
@@ -906,10 +909,30 @@
                     crosshair: {
                         mode: LightweightCharts.CrosshairMode.Normal,
                     },
+                    localization: {
+                        timeFormatter: (timestamp) => {
+                            const d = new Date(timestamp * 1000);
+                            return d.toLocaleTimeString('en-US', {
+                                timeZone: 'America/New_York',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
+                            });
+                        },
+                    },
                     timeScale: {
                         borderColor: '#e0e0e5',
                         timeVisible: true,
                         secondsVisible: false,
+                        tickMarkFormatter: (timestamp) => {
+                            const d = new Date(timestamp * 1000);
+                            return d.toLocaleTimeString('en-US', {
+                                timeZone: 'America/New_York',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
+                            });
+                        },
                     },
                     rightPriceScale: {
                         borderColor: '#e0e0e5',
@@ -1008,6 +1031,10 @@
                     btn.classList.remove('active');
                 });
                 document.querySelector(`[data-range="${range}"]`).classList.add('active');
+
+                // Show ET timezone label for intraday
+                const tzLabel = document.getElementById('tzLabel');
+                if (tzLabel) tzLabel.style.display = range === '1d' ? 'inline' : 'none';
                 
                 // Reload chart
                 if (this.currentSymbol) {
