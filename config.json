@@ -47,21 +47,13 @@
           "icon": "🔶"
         },
         {
-          "name": "镍",
-          "symbol": "NICK.L",
-          "display_symbol": "NICK",
-          "source": "yahoo",
-          "unit": "USD (ETC)",
-          "icon": "⚙️"
-        },
-        {
-          "name": "稀土ETF",
-          "symbol": "REMX.US",
-          "display_symbol": "REMX",
-          "yahoo_symbol": "REMX",
+          "name": "铜矿ETF",
+          "symbol": "COPX.US",
+          "display_symbol": "COPX",
+          "yahoo_symbol": "COPX",
           "source": "eodhd",
           "unit": "USD",
-          "icon": "💎"
+          "icon": "🔶"
         }
       ]
     },
@@ -78,13 +70,21 @@
           "icon": "🛢️"
         },
         {
-          "name": "原油ETF",
-          "symbol": "USO.US",
-          "display_symbol": "USO",
-          "yahoo_symbol": "USO",
+          "name": "镍",
+          "symbol": "NICK.L",
+          "display_symbol": "NICK",
+          "source": "yahoo",
+          "unit": "USD (ETC)",
+          "icon": "⚙️"
+        },
+        {
+          "name": "稀土ETF",
+          "symbol": "REMX.US",
+          "display_symbol": "REMX",
+          "yahoo_symbol": "REMX",
           "source": "eodhd",
           "unit": "USD",
-          "icon": "🛢️"
+          "icon": "💎"
         }
       ]
     },
