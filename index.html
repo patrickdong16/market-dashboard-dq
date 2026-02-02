@@ -369,8 +369,10 @@
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     
     <script>
-        // Configuration
-        const API_BASE_URL = 'https://market-dashboard-api.vercel.app'; // Will be configurable
+        // Configuration - Auto-detect environment
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000'  // Local development
+            : 'https://market-dashboard-api.vercel.app'; // Production
         const UPDATE_INTERVAL = 30000; // 30 seconds
 
         class MarketDashboard {
