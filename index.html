@@ -866,6 +866,7 @@
                     if (!response.ok) throw new Error('Failed to load chart');
                     const result = await response.json();
                     chartData = result.data || [];
+                    const timeFormat = result.time_format || 'timestamp';
 
                     if (chartData.length === 0) {
                         container.innerHTML = '<div class="error">暂无数据</div>';
@@ -874,16 +875,15 @@
 
                     // Intraday uses line chart, daily uses candlestick
                     if (range === '1d') {
-                        // Filter to last trading session (~24h window)
-                        // Using time-based cutoff instead of date string (avoids timezone issues)
-                        if (chartData.length > 0) {
-                            const lastTime = chartData[chartData.length - 1].time;
-                            const cutoff = lastTime - 24 * 3600;
-                            chartData = chartData.filter(d => d.time >= cutoff);
+                        // Filter to current trading session based on asset type
+                        chartData = this.filterTodayData(chartData, asset);
+                        if (chartData.length === 0) {
+                            container.innerHTML = '<div class="error">暂无今日数据</div>';
+                            return;
                         }
                         this.renderLineChart(chartData);
                     } else {
-                        this.renderChart(chartData);
+                        this.renderChart(chartData, timeFormat);
                     }
                 } catch (error) {
                     console.error('Chart loading error:', error);
@@ -984,47 +984,150 @@
                 });
             }
 
+            /**
+             * Get current date/time in Eastern Time using Intl.DateTimeFormat.
+             * Reliable across all browsers, handles DST automatically.
+             */
+            getETDate() {
+                const now = new Date();
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                }).formatToParts(now);
+
+                const get = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+                return {
+                    year: get('year'),
+                    month: get('month'),  // 1-based
+                    day: get('day'),
+                    hour: get('hour'),
+                    minute: get('minute'),
+                };
+            }
+
+            /**
+             * Get ET→UTC offset in seconds.
+             * ET = UTC - offset, so UTC = ET + offset.
+             * Returns 18000 (5h) for EST or 14400 (4h) for EDT.
+             */
+            getETOffsetSeconds() {
+                const now = new Date();
+                // Format the same instant in both UTC and ET, then compute difference
+                const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+                const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+                // Parsing locale strings back to Date gives us the wall-clock difference
+                return (new Date(utcStr).getTime() - new Date(etStr).getTime()) / 1000;
+            }
+
+            /**
+             * Convert ET time components to UTC Unix timestamp.
+             * @param {number} year, month (1-based), day, hour, minute
+             * @returns {number} UTC Unix timestamp in seconds
+             */
+            etToUTC(year, month, day, hour, minute) {
+                const offsetSec = this.getETOffsetSeconds();
+                // Build the ET time as if it were UTC, then add the offset
+                const etAsUTC = Date.UTC(year, month - 1, day, hour, minute, 0) / 1000;
+                return etAsUTC + offsetSec;
+            }
+
+            /**
+             * Filter intraday data to current trading session based on asset type.
+             * Returns filtered array of data points.
+             */
+            filterTodayData(data, asset) {
+                if (!data || data.length === 0) return data;
+                if (!asset) return data;
+
+                const sym = asset.symbol;
+                const isFutures = sym.includes('=F') || sym.includes('.L');
+                const isUSEquity = sym.includes('.US');
+                const isCrypto = sym.includes('.CC') || sym.includes('-USD');
+                const isForex = sym.includes('.FOREX') || sym.includes('=X');
+
+                // Crypto & Forex: last 24h, no session filtering
+                if (isCrypto || isForex) {
+                    if (data.length > 0) {
+                        const lastTime = data[data.length - 1].time;
+                        const cutoff = lastTime - 24 * 3600;
+                        return data.filter(d => d.time >= cutoff);
+                    }
+                    return data;
+                }
+
+                const et = this.getETDate();
+
+                if (isFutures) {
+                    // Futures session: previous day 18:00 ET → current day 17:00 ET
+                    const sessionStart = this.etToUTC(et.year, et.month, et.day - 1, 18, 0);
+                    const sessionEnd = this.etToUTC(et.year, et.month, et.day, 17, 0);
+                    const filtered = data.filter(d => d.time >= sessionStart && d.time <= sessionEnd);
+                    // If no data in current session (weekend/holiday), show last available day
+                    if (filtered.length === 0 && data.length > 0) {
+                        const lastTime = data[data.length - 1].time;
+                        const fallbackStart = lastTime - 24 * 3600;
+                        return data.filter(d => d.time >= fallbackStart);
+                    }
+                    return filtered;
+                } else if (isUSEquity) {
+                    // US equity session: 09:30 ET → 16:00 ET
+                    const sessionStart = this.etToUTC(et.year, et.month, et.day, 9, 30);
+                    const sessionEnd = this.etToUTC(et.year, et.month, et.day, 16, 0);
+                    const filtered = data.filter(d => d.time >= sessionStart && d.time <= sessionEnd);
+                    // Fallback for weekends/holidays: show last trading day's data
+                    if (filtered.length === 0 && data.length > 0) {
+                        const lastTime = data[data.length - 1].time;
+                        const fallbackStart = lastTime - 8 * 3600; // ~trading day window
+                        return data.filter(d => d.time >= fallbackStart);
+                    }
+                    return filtered;
+                }
+
+                // Default: last 24h
+                if (data.length > 0) {
+                    const lastTime = data[data.length - 1].time;
+                    const cutoff = lastTime - 24 * 3600;
+                    return data.filter(d => d.time >= cutoff);
+                }
+                return data;
+            }
+
             getTradingSessionRange(firstTimestamp) {
                 const asset = this.findAssetBySymbol(this.currentSymbol);
                 if (!asset) return null;
 
                 const sym = asset.symbol;
-                
-                // Get ET offset from UTC in seconds (handles DST automatically)
-                const now = new Date();
-                const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
-                const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-                const etOffsetSec = (new Date(utcStr).getTime() - new Date(etStr).getTime()) / 1000;
-
-                // Get today's date in ET
-                const etParts = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'America/New_York',
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                }).formatToParts(now);
-                const etYear = parseInt(etParts.find(p => p.type === 'year').value);
-                const etMonth = parseInt(etParts.find(p => p.type === 'month').value) - 1;
-                const etDay = parseInt(etParts.find(p => p.type === 'day').value);
-
-                // Futures: ~18:00 ET previous day to 17:00 ET current day
                 const isFutures = sym.includes('=F') || sym.includes('.L');
-                // US ETFs/Stocks
                 const isUSEquity = sym.includes('.US');
+                const isCrypto = sym.includes('.CC') || sym.includes('-USD');
+                const isForex = sym.includes('.FOREX') || sym.includes('=X');
+
+                // Crypto/Forex: just fit content (24h)
+                if (isCrypto || isForex) return null;
+
+                const et = this.getETDate();
 
                 if (isFutures) {
-                    const startUTC = Date.UTC(etYear, etMonth, etDay - 1, 18, 0) / 1000 + etOffsetSec;
-                    const endUTC = Date.UTC(etYear, etMonth, etDay, 17, 0) / 1000 + etOffsetSec;
+                    // Futures: previous day 18:00 ET → current day 17:00 ET
+                    const startUTC = this.etToUTC(et.year, et.month, et.day - 1, 18, 0);
+                    const endUTC = this.etToUTC(et.year, et.month, et.day, 17, 0);
                     return { from: startUTC, to: endUTC };
                 } else if (isUSEquity) {
-                    const startUTC = Date.UTC(etYear, etMonth, etDay, 9, 30) / 1000 + etOffsetSec;
-                    const endUTC = Date.UTC(etYear, etMonth, etDay, 16, 0) / 1000 + etOffsetSec;
+                    // US equity: 09:30 ET → 16:00 ET
+                    const startUTC = this.etToUTC(et.year, et.month, et.day, 9, 30);
+                    const endUTC = this.etToUTC(et.year, et.month, et.day, 16, 0);
                     return { from: startUTC, to: endUTC };
                 }
 
-                // Crypto/Forex: just fit content (24h)
                 return null;
             }
 
-            renderChart(data) {
+            renderChart(data, timeFormat) {
                 const container = document.getElementById('chartContainer');
                 container.innerHTML = '';
 
@@ -1066,13 +1169,27 @@
 
                 const asset2 = this.findAssetBySymbol(this.currentSymbol);
                 const mult2 = asset2 ? (asset2.price_multiplier || 1) : 1;
-                const chartData = mult2 !== 1 ? data.map(d => ({
-                    time: d.time,
-                    open: d.open * mult2,
-                    high: d.high * mult2,
-                    low: d.low * mult2,
-                    close: d.close * mult2,
-                })) : data;
+
+                // Convert time format: date strings → LWC BusinessDay objects
+                const chartData = data.map(d => {
+                    let timeVal = d.time;
+                    if (timeFormat === 'date' && typeof d.time === 'string') {
+                        // "YYYY-MM-DD" → { year, month, day }
+                        const parts = d.time.split('-');
+                        timeVal = {
+                            year: parseInt(parts[0], 10),
+                            month: parseInt(parts[1], 10),
+                            day: parseInt(parts[2], 10),
+                        };
+                    }
+                    return {
+                        time: timeVal,
+                        open: d.open * mult2,
+                        high: d.high * mult2,
+                        low: d.low * mult2,
+                        close: d.close * mult2,
+                    };
+                });
 
                 candleSeries.setData(chartData);
                 this.chart.timeScale().fitContent();

@@ -64,6 +64,9 @@ def fetch_eodhd_intraday(symbol):
 def fetch_eodhd_eod(symbol, from_date):
     """Fetch daily OHLCV bars from EODHD EOD API.
     
+    Returns date strings (YYYY-MM-DD) as time values for BusinessDay format.
+    This eliminates timezone-related date offset issues in daily charts.
+    
     Args:
         symbol: EODHD symbol (e.g. GLD.US)
         from_date: ISO date string YYYY-MM-DD
@@ -84,14 +87,16 @@ def fetch_eodhd_eod(symbol, from_date):
         close = bar.get('close')
         if close is None or close == 'NA':
             continue
-        # Convert date string to unix timestamp (noon UTC)
+        date_str = bar.get('date', '')
+        if not date_str:
+            continue
+        # Validate date format
         try:
-            dt = datetime.strptime(bar['date'], '%Y-%m-%d')
-            ts = int(dt.timestamp())
-        except (ValueError, KeyError):
+            datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
             continue
         ohlcv.append({
-            'time': ts,
+            'time': date_str,
             'open': float(bar.get('open') or close),
             'high': float(bar.get('high') or close),
             'low': float(bar.get('low') or close),
@@ -124,7 +129,11 @@ def range_to_from_date(range_val):
 # ─── Yahoo fallback ──────────────────────────────────────────────
 
 def fetch_yahoo_chart(symbol, range_val, interval):
-    """Fallback: fetch chart data from Yahoo Finance."""
+    """Fallback: fetch chart data from Yahoo Finance.
+    
+    For daily interval, returns date strings (YYYY-MM-DD) as time values.
+    For intraday interval, returns Unix timestamps.
+    """
     crumb, cj, opener = _get_yahoo_crumb()
     yahoo_url = (
         f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
@@ -149,11 +158,20 @@ def fetch_yahoo_chart(symbol, range_val, interval):
     closes = quote.get('close', [])
     volumes = quote.get('volume', [])
 
+    use_date_strings = (interval == '1d')
+
     ohlcv = []
     for i in range(len(timestamps)):
         if i < len(closes) and closes[i] is not None:
+            ts = timestamps[i]
+            if use_date_strings:
+                # Convert Unix timestamp to UTC date string
+                # Yahoo daily timestamps are at market close or midnight UTC
+                time_val = datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d')
+            else:
+                time_val = ts
             ohlcv.append({
-                'time': timestamps[i],
+                'time': time_val,
                 'open': opens[i] if i < len(opens) and opens[i] else closes[i],
                 'high': highs[i] if i < len(highs) and highs[i] else closes[i],
                 'low': lows[i] if i < len(lows) and lows[i] else closes[i],
@@ -239,6 +257,7 @@ class handler(BaseHTTPRequestHandler):
                     with urllib.request.urlopen(req, timeout=8) as resp:
                         yahoo_data = json.loads(resp.read())
                     chart_result = yahoo_data.get('chart', {}).get('result', [])
+                    use_date_strings = (interval == '1d')
                     if chart_result:
                         data = chart_result[0]
                         timestamps = data.get('timestamp') or []
@@ -250,8 +269,13 @@ class handler(BaseHTTPRequestHandler):
                         volumes = quote.get('volume', [])
                         for i in range(len(timestamps)):
                             if i < len(closes) and closes[i] is not None:
+                                ts = timestamps[i]
+                                if use_date_strings:
+                                    time_val = datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d')
+                                else:
+                                    time_val = ts
                                 ohlcv.append({
-                                    'time': timestamps[i],
+                                    'time': time_val,
                                     'open': opens[i] if i < len(opens) and opens[i] else closes[i],
                                     'high': highs[i] if i < len(highs) and highs[i] else closes[i],
                                     'low': lows[i] if i < len(lows) and lows[i] else closes[i],
@@ -266,11 +290,16 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(404, {'error': 'No data from any source', 'symbol': symbol})
                 return
 
+            # Determine time_format based on interval
+            # Daily data uses date strings, intraday uses Unix timestamps
+            time_format = 'date' if interval == '1d' else 'timestamp'
+
             self._respond(200, {
                 'symbol': symbol,
                 'range': range_val,
                 'interval': interval,
                 'source': source_used,
+                'time_format': time_format,
                 'data': ohlcv
             })
 
