@@ -1081,10 +1081,11 @@
                 const isUSEquity = sym.includes('.US');
                 const isCrypto = sym.includes('.CC') || sym.includes('-USD');
                 const isForex = sym.includes('.FOREX') || sym.includes('=X');
+                // GoldPrice assets use GC=F/SI=F chart data → treat as futures for chart display
                 const isGoldPrice = sym === 'XAUUSD' || sym === 'XAGUSD';
 
-                // Crypto, Forex & spot precious metals: last 24h, no session filtering
-                if (isCrypto || isForex || isGoldPrice) {
+                // Crypto & Forex: last 24h, no session filtering
+                if (isCrypto || isForex) {
                     if (data.length > 0) {
                         const lastTime = data[data.length - 1].time;
                         const cutoff = lastTime - 24 * 3600;
@@ -1095,8 +1096,9 @@
 
                 const et = this.getETDate();
 
-                if (isFutures) {
-                    // Futures session: previous day 18:00 ET → current day 17:00 ET
+                if (isFutures || isGoldPrice) {
+                    // Futures session (incl. GoldPrice using GC=F/SI=F chart data):
+                    // previous day 18:00 ET → current day 17:00 ET
                     const sessionStart = this.etToUTC(et.year, et.month, et.day - 1, 18, 0);
                     const sessionEnd = this.etToUTC(et.year, et.month, et.day, 17, 0);
                     const filtered = data.filter(d => d.time >= sessionStart && d.time <= sessionEnd);
@@ -1139,15 +1141,16 @@
                 const isUSEquity = sym.includes('.US');
                 const isCrypto = sym.includes('.CC') || sym.includes('-USD');
                 const isForex = sym.includes('.FOREX') || sym.includes('=X');
+                // GoldPrice assets use GC=F/SI=F chart data → treat as futures for session range
                 const isGoldPrice = sym === 'XAUUSD' || sym === 'XAGUSD';
 
-                // Crypto, Forex & spot precious metals: just fit content (24h)
-                if (isCrypto || isForex || isGoldPrice) return null;
+                // Crypto & Forex: just fit content (24h)
+                if (isCrypto || isForex) return null;
 
                 const et = this.getETDate();
 
-                if (isFutures) {
-                    // Futures: previous day 18:00 ET → current day 17:00 ET
+                if (isFutures || isGoldPrice) {
+                    // Futures (incl. GoldPrice): previous day 18:00 ET → current day 17:00 ET
                     const startUTC = this.etToUTC(et.year, et.month, et.day - 1, 18, 0);
                     const endUTC = this.etToUTC(et.year, et.month, et.day, 17, 0);
                     return { from: startUTC, to: endUTC };
