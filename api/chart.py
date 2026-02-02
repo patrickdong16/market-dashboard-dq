@@ -17,12 +17,12 @@ class handler(BaseHTTPRequestHandler):
         opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')]
 
         # Step 1: Get consent cookies
-        opener.open('https://fc.yahoo.com', timeout=5)
+        opener.open('https://fc.yahoo.com', timeout=3)
 
         # Step 2: Get crumb
         crumb_req = urllib.request.Request('https://query2.finance.yahoo.com/v1/test/getcrumb')
         crumb_req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
-        with opener.open(crumb_req, timeout=5) as resp:
+        with opener.open(crumb_req, timeout=3) as resp:
             crumb = resp.read().decode('utf-8')
 
         return crumb, cj, opener
@@ -47,20 +47,34 @@ class handler(BaseHTTPRequestHandler):
             if interval not in valid_intervals:
                 interval = '1d'
 
-            # Get crumb + cookies for authenticated access
-            crumb, cj, opener = self._get_yahoo_crumb()
+            yahoo_data = None
 
-            yahoo_url = (
-                f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
-                f"?range={range_val}&interval={interval}&crumb={urllib.parse.quote(crumb)}"
-            )
+            # Try authenticated request with crumb (gets real-time data)
+            try:
+                crumb, cj, opener = self._get_yahoo_crumb()
+                yahoo_url = (
+                    f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
+                    f"?range={range_val}&interval={interval}&crumb={urllib.parse.quote(crumb)}"
+                )
+                req = urllib.request.Request(yahoo_url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                })
+                with opener.open(req, timeout=4) as resp:
+                    yahoo_data = json.loads(resp.read())
+            except Exception:
+                pass
 
-            req = urllib.request.Request(yahoo_url, headers={
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-            })
-
-            with opener.open(req, timeout=10) as resp:
-                yahoo_data = json.loads(resp.read())
+            # Fallback: unauthenticated request (may return stale data)
+            if not yahoo_data:
+                yahoo_url = (
+                    f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
+                    f"?range={range_val}&interval={interval}"
+                )
+                req = urllib.request.Request(yahoo_url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                })
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    yahoo_data = json.loads(resp.read())
 
             chart_result = yahoo_data.get('chart', {}).get('result', [])
             if not chart_result:
