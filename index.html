@@ -466,20 +466,7 @@
                                 const price = latest.close;
                                 const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
 
-                                // Get intraday data for sparkline, fallback to daily
-                                let sparkline = dailyPoints.slice(-5).map(p => p.close);
-                                try {
-                                    const intraResp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=1d&interval=5m`);
-                                    if (intraResp.ok) {
-                                        const intraData = await intraResp.json();
-                                        const intraPoints = intraData.data || [];
-                                        if (intraPoints.length > 1) {
-                                            sparkline = intraPoints.map(p => p.close);
-                                        }
-                                    }
-                                } catch (e) {
-                                    // Keep daily fallback
-                                }
+                                const sparkline = [];
 
                                 return {
                                     symbol,
@@ -555,11 +542,6 @@
                             <div class="change ${changeClass}">
                                 ${changeSymbol}${changePercent.toFixed(2)}%
                             </div>
-                        </div>
-                        <div class="sparkline-container">
-                            <canvas class="sparkline" 
-                                    data-symbol="${asset.symbol}" 
-                                    width="50" height="30"></canvas>
                         </div>
                     </div>
                 `;
