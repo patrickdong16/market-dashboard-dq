@@ -1,118 +1,100 @@
-from http.server import BaseHTTPRequestHandler
 import json
 import urllib.request
 import urllib.parse
-import time
+import urllib.error
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        # CORS headers
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Cache-Control', 's-maxage=60')
-        self.end_headers()
-        
-        try:
-            # Parse query parameters
-            parsed_url = urllib.parse.urlparse(self.path)
-            query_params = urllib.parse.parse_qs(parsed_url.query)
-            
-            symbol = query_params.get('symbol', [''])[0]
-            range_param = query_params.get('range', ['3mo'])[0]
-            interval = query_params.get('interval', ['1d'])[0]
-            
-            if not symbol:
-                response = json.dumps({'error': 'Missing symbol parameter'})
-                self.wfile.write(response.encode())
-                return
-            
-            # Map range to periods
-            range_mapping = {
-                '5d': 5,
-                '1mo': 30,
-                '3mo': 90,
-                '1y': 365
+
+def handler(request):
+    """Vercel Serverless Function: proxy Yahoo Finance chart data for K-line."""
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(request.url if hasattr(request, 'url') else f"http://localhost{request.get('path', '/')}")
+    params = parse_qs(parsed.query)
+
+    symbol = params.get('symbol', [''])[0]
+    range_val = params.get('range', ['3mo'])[0]
+    interval = params.get('interval', ['1d'])[0]
+
+    if not symbol:
+        return {
+            'statusCode': 400,
+            'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Missing symbol parameter'})
+        }
+
+    # Validate range
+    valid_ranges = ['5d', '1mo', '3mo', '6mo', '1y', '2y']
+    if range_val not in valid_ranges:
+        range_val = '3mo'
+
+    try:
+        yahoo_url = (
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
+            f"?range={range_val}&interval={interval}&includePrePost=false"
+        )
+
+        req = urllib.request.Request(yahoo_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        })
+
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            yahoo_data = json.loads(resp.read())
+
+        chart_result = yahoo_data.get('chart', {}).get('result', [])
+        if not chart_result:
+            return {
+                'statusCode': 404,
+                'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'No data found'})
             }
-            
-            if range_param not in range_mapping:
-                response = json.dumps({'error': 'Invalid range parameter'})
-                self.wfile.write(response.encode())
-                return
-            
-            days = range_mapping[range_param]
-            period1 = int(time.time()) - (days * 24 * 60 * 60)
-            period2 = int(time.time())
-            
-            # Build Yahoo Finance chart API URL
-            symbol_encoded = urllib.parse.quote(symbol)
-            yahoo_url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol_encoded}?period1={period1}&period2={period2}&interval={interval}"
-            
-            # Request to Yahoo Finance with timeout
-            req = urllib.request.Request(yahoo_url, headers={
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+
+        data = chart_result[0]
+        timestamps = data.get('timestamp', [])
+        indicators = data.get('indicators', {})
+        quote = indicators.get('quote', [{}])[0]
+
+        opens = quote.get('open', [])
+        highs = quote.get('high', [])
+        lows = quote.get('low', [])
+        closes = quote.get('close', [])
+        volumes = quote.get('volume', [])
+
+        # Build OHLCV array for TradingView Lightweight Charts
+        ohlcv = []
+        for i in range(len(timestamps)):
+            if closes[i] is not None:
+                ohlcv.append({
+                    'time': timestamps[i],
+                    'open': opens[i] or closes[i],
+                    'high': highs[i] or closes[i],
+                    'low': lows[i] or closes[i],
+                    'close': closes[i],
+                    'volume': volumes[i] if i < len(volumes) else 0
+                })
+
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json',
+                'Cache-Control': 's-maxage=60'
+            },
+            'body': json.dumps({
+                'symbol': symbol,
+                'range': range_val,
+                'interval': interval,
+                'data': ohlcv
             })
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                yahoo_data = json.loads(response.read())
-            
-            # Process response
-            chart_data = yahoo_data.get('chart', {}).get('result', [])
-            if not chart_data:
-                response = json.dumps({'error': 'No chart data found'})
-                self.wfile.write(response.encode())
-                return
-            
-            chart = chart_data[0]
-            timestamps = chart.get('timestamp', [])
-            quotes = chart.get('indicators', {}).get('quote', [])
-            
-            if not quotes:
-                response = json.dumps({'error': 'No quote data found'})
-                self.wfile.write(response.encode())
-                return
-            
-            quote = quotes[0]
-            opens = quote.get('open', [])
-            highs = quote.get('high', [])
-            lows = quote.get('low', [])
-            closes = quote.get('close', [])
-            volumes = quote.get('volume', [])
-            
-            # Build OHLCV array for TradingView Lightweight Charts
-            ohlcv_data = []
-            for i in range(len(timestamps)):
-                # Skip if any required value is None
-                if (i < len(opens) and opens[i] is not None and
-                    i < len(highs) and highs[i] is not None and
-                    i < len(lows) and lows[i] is not None and
-                    i < len(closes) and closes[i] is not None):
-                    
-                    ohlcv_data.append({
-                        'time': timestamps[i],
-                        'open': opens[i],
-                        'high': highs[i],
-                        'low': lows[i],
-                        'close': closes[i],
-                        'volume': volumes[i] if i < len(volumes) and volumes[i] is not None else 0
-                    })
-            
-            response = json.dumps(ohlcv_data)
-            self.wfile.write(response.encode())
-            
-        except urllib.error.URLError:
-            response = json.dumps({'error': 'timeout'})
-            self.wfile.write(response.encode())
-        except Exception as e:
-            response = json.dumps({'error': str(e)})
-            self.wfile.write(response.encode())
-    
-    def do_OPTIONS(self):
-        # Handle preflight requests
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+        }
+
+    except urllib.error.URLError:
+        return {
+            'statusCode': 504,
+            'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'timeout'})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
+            'body': json.dumps({'error': str(e)})
+        }
