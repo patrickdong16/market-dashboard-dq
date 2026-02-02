@@ -7,6 +7,7 @@
         {
           "name": "黄金",
           "symbol": "GC=F",
+          "display_symbol": "XAUUSD",
           "eodhd_symbol": "GLD.US",
           "source": "yahoo",
           "unit": "USD/oz",
@@ -15,6 +16,7 @@
         {
           "name": "白银",
           "symbol": "SI=F",
+          "display_symbol": "XAGUSD",
           "eodhd_symbol": "SLV.US",
           "source": "yahoo",
           "unit": "USD/oz",
@@ -23,6 +25,7 @@
         {
           "name": "铜",
           "symbol": "HG=F",
+          "display_symbol": "HG",
           "eodhd_symbol": "COPX.US",
           "source": "yahoo",
           "unit": "USD/lb",
@@ -31,6 +34,7 @@
         {
           "name": "镍",
           "symbol": "NICK.L",
+          "display_symbol": "NICK",
           "eodhd_symbol": "NICK.LSE",
           "source": "yahoo",
           "unit": "USD (ETC)",
@@ -39,6 +43,7 @@
         {
           "name": "稀土ETF",
           "symbol": "REMX",
+          "display_symbol": "REMX",
           "eodhd_symbol": "REMX.US",
           "source": "yahoo",
           "unit": "USD",
@@ -53,6 +58,7 @@
         {
           "name": "WTI原油",
           "symbol": "CL=F",
+          "display_symbol": "WTI",
           "eodhd_symbol": "USO.US",
           "source": "yahoo",
           "unit": "USD/桶",
@@ -67,6 +73,7 @@
         {
           "name": "BTC",
           "symbol": "BTC-USD.CC",
+          "display_symbol": "BTC",
           "yahoo_symbol": "BTC-USD",
           "source": "eodhd",
           "unit": "USD",
@@ -75,6 +82,7 @@
         {
           "name": "ETH",
           "symbol": "ETH-USD.CC",
+          "display_symbol": "ETH",
           "yahoo_symbol": "ETH-USD",
           "source": "eodhd",
           "unit": "USD",
@@ -89,6 +97,7 @@
         {
           "name": "USD/CNY",
           "symbol": "USDCNY.FOREX",
+          "display_symbol": "USD/CNY",
           "yahoo_symbol": "CNY=X",
           "source": "eodhd",
           "unit": "",
@@ -97,6 +106,7 @@
         {
           "name": "USD/JPY",
           "symbol": "USDJPY.FOREX",
+          "display_symbol": "USD/JPY",
           "yahoo_symbol": "JPY=X",
           "source": "eodhd",
           "unit": "",
@@ -105,6 +115,7 @@
         {
           "name": "EUR/USD",
           "symbol": "EURUSD.FOREX",
+          "display_symbol": "EUR/USD",
           "yahoo_symbol": "EURUSD=X",
           "source": "eodhd",
           "unit": "",

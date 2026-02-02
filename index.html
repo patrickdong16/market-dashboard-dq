@@ -510,7 +510,7 @@
                         <div class="asset-icon">${asset.icon || '📈'}</div>
                         <div class="asset-info">
                             <div class="asset-name">${asset.name}</div>
-                            <div class="asset-symbol">${asset.symbol}</div>
+                            <div class="asset-symbol">${asset.display_symbol || asset.symbol}</div>
                         </div>
                         <div class="asset-price">
                             <div class="price">${price}</div>
@@ -659,7 +659,7 @@
                 const data = this.data.get(symbol) || {};
                 
                 document.getElementById('headerTitle').textContent = asset ? asset.name : symbol;
-                document.getElementById('detailName').textContent = asset ? `${asset.name} (${symbol})` : symbol;
+                document.getElementById('detailName').textContent = asset ? `${asset.name} (${asset.display_symbol || symbol})` : symbol;
                 
                 const price = this.formatPrice(data.price || 0, asset || {});
                 document.getElementById('detailPrice').textContent = price;
