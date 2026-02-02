@@ -28,7 +28,7 @@ class handler(BaseHTTPRequestHandler):
 
             yahoo_url = (
                 f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
-                f"?range={range_val}&interval={interval}&includePrePost=false"
+                f"?range={range_val}&interval={interval}"
             )
 
             req = urllib.request.Request(yahoo_url, headers={
@@ -86,7 +86,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self._cors_headers()
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Cache-Control', 's-maxage=60')
+        self.send_header('Cache-Control', 's-maxage=30')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
