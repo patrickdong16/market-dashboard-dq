@@ -158,6 +158,76 @@ class MarketDataFetcher:
         
         return result
     
+    def get_eodhd_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
+        """获取 EODHD 实时数据"""
+        result = {
+            'symbol': symbol,
+            'name': name,
+            'price': None,
+            'change_percent_24h': None,
+            'prev_close': None,
+            'history': [],
+            'error': None,
+            'source': 'eodhd'
+        }
+        
+        api_key_path = os.path.join('/Users/dq/.openclaw/workspace/.config/api_keys/eodhd')
+        try:
+            with open(api_key_path) as f:
+                api_key = f.read().strip()
+        except:
+            result['error'] = "EODHD API key not found"
+            logger.error(result['error'])
+            return result
+        
+        for retry in range(self.max_retries):
+            try:
+                url = f"https://eodhd.com/api/real-time/{symbol}?api_token={api_key}&fmt=json"
+                resp = requests.get(url, timeout=self.timeout, headers={'User-Agent': 'MarketDashboard/1.0'})
+                resp.raise_for_status()
+                data = resp.json()
+                
+                close_price = data.get('close')
+                prev_close = data.get('previousClose')
+                change_p = data.get('change_p')
+                
+                if close_price in (None, 'NA', 0) or prev_close in (None, 'NA', 0):
+                    result['error'] = f"EODHD returned NA for {symbol}"
+                    logger.warning(result['error'])
+                    # Try Yahoo fallback
+                    fallback_sym = yahoo_symbol or symbol
+                    return self.get_yahoo_data(fallback_sym, name)
+                
+                result.update({
+                    'price': float(close_price),
+                    'change_percent_24h': float(change_p) if change_p not in (None, 'NA') else 0,
+                    'prev_close': float(prev_close),
+                    'last_updated': datetime.now().isoformat()
+                })
+                
+                # Get history from Yahoo for sparkline
+                if yahoo_symbol:
+                    try:
+                        ticker = yf.Ticker(yahoo_symbol)
+                        hist = ticker.history(period="8d", interval="1d", timeout=self.timeout)
+                        if not hist.empty:
+                            result['history'] = [float(p) for p in hist['Close'].tail(7).tolist()]
+                    except:
+                        pass
+                
+                logger.info(f"✓ {name} ({symbol}): ${float(close_price):.4f} ({float(change_p):+.2f}%) [eodhd]")
+                return result
+                
+            except Exception as e:
+                logger.warning(f"EODHD attempt {retry + 1} failed for {symbol}: {e}")
+                if retry < self.max_retries - 1:
+                    time.sleep(1)
+        
+        # Fallback to Yahoo
+        fallback_sym = yahoo_symbol or symbol
+        logger.info(f"Falling back to Yahoo for {name} ({fallback_sym})")
+        return self.get_yahoo_data(fallback_sym, name)
+
     def get_goldprice_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
         """获取 GoldPrice.org 贵金属现货数据（XAU/XAG）"""
         result = {
@@ -265,6 +335,8 @@ class MarketDataFetcher:
                 
                 if asset['source'] == 'goldprice':
                     data = self.get_goldprice_data(symbol, asset['name'], asset.get('yahoo_symbol'))
+                elif asset['source'] == 'eodhd':
+                    data = self.get_eodhd_data(symbol, asset['name'], asset.get('yahoo_symbol'))
                 elif asset['source'] == 'yahoo':
                     data = self.get_yahoo_data(symbol, asset['name'])
                 elif asset['source'] == 'binance':
@@ -298,10 +370,22 @@ class MarketDataFetcher:
                         elif data['price'] and data['change_percent_24h'] is not None:
                             prev_close = data['price'] / (1 + data['change_percent_24h'] / 100)
                     
+                    final_price = data['price']
+                    final_change = data['change_percent_24h']
+                    final_prev = prev_close
+                    
+                    # Invert price for USD/EUR style display
+                    if asset.get('invert') and final_price and final_price > 0:
+                        final_price = 1 / final_price
+                        if final_change is not None:
+                            final_change = -final_change
+                        if final_prev and final_prev > 0:
+                            final_prev = 1 / final_prev
+                    
                     latest_data['assets'][symbol] = {
-                        'price': data['price'],
-                        'change_pct': data['change_percent_24h'],
-                        'prev_close': prev_close,
+                        'price': final_price,
+                        'change_pct': final_change,
+                        'prev_close': final_prev,
                         'name': asset['name'],
                         'updated': data.get('last_updated', datetime.now().isoformat()),
                         'unit': asset['unit'],

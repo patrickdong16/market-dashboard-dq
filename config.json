@@ -120,13 +120,14 @@
           "icon": "🇯🇵"
         },
         {
-          "name": "EUR/USD",
+          "name": "USD/EUR",
           "symbol": "EURUSD.FOREX",
-          "display_symbol": "EUR/USD",
+          "display_symbol": "USD/EUR",
           "yahoo_symbol": "EURUSD=X",
           "source": "eodhd",
           "unit": "",
-          "icon": "🇪🇺"
+          "icon": "🇪🇺",
+          "invert": true
         }
       ]
     }
