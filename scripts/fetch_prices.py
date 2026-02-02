@@ -157,109 +157,166 @@ class MarketDataFetcher:
         
         return result
     
-    def fetch_all_data(self) -> Dict[str, Any]:
-        """获取所有品种的数据"""
-        all_data = {
-            'categories': [],
-            'last_updated': datetime.now().isoformat(),
-            'meta': {
-                'total_assets': 0,
-                'successful_fetches': 0,
-                'failed_fetches': 0
-            }
+    def fetch_all_data(self) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """获取所有品种的数据，返回 (latest_data, history_data)"""
+        latest_data = {
+            'updated_at': datetime.now().isoformat(),
+            'assets': {}
+        }
+        
+        history_data = {}
+        
+        meta = {
+            'total_assets': 0,
+            'successful_fetches': 0,
+            'failed_fetches': 0
         }
         
         for category in self.config['categories']:
-            category_data = {
-                'name': category['name'],
-                'id': category['id'],
-                'assets': []
-            }
-            
             for asset in category['assets']:
-                logger.info(f"Fetching data for {asset['name']} ({asset['symbol']})...")
+                symbol = asset['symbol']
+                logger.info(f"Fetching data for {asset['name']} ({symbol})...")
                 
                 if asset['source'] == 'yahoo':
-                    data = self.get_yahoo_data(asset['symbol'], asset['name'])
+                    data = self.get_yahoo_data(symbol, asset['name'])
                 elif asset['source'] == 'binance':
-                    data = self.get_binance_data(asset['symbol'], asset['name'])
+                    data = self.get_binance_data(symbol, asset['name'])
                 else:
                     data = {
-                        'symbol': asset['symbol'],
+                        'symbol': symbol,
                         'name': asset['name'],
                         'error': f"Unknown source: {asset['source']}",
                         'source': asset['source']
                     }
                     logger.error(data['error'])
                 
-                # 添加资产配置信息
-                data.update({
-                    'unit': asset['unit'],
-                    'icon': asset['icon'],
-                    'category': category['id']
-                })
-                
-                category_data['assets'].append(data)
-                all_data['meta']['total_assets'] += 1
-                
+                # 构建 latest_data 按照 TDD.md 格式
                 if data['error']:
-                    all_data['meta']['failed_fetches'] += 1
+                    latest_data['assets'][symbol] = {
+                        'error': True,
+                        'name': asset['name'],
+                        'updated': datetime.now().isoformat()
+                    }
+                    meta['failed_fetches'] += 1
                 else:
-                    all_data['meta']['successful_fetches'] += 1
-            
-            all_data['categories'].append(category_data)
+                    # 计算前收盘价
+                    prev_close = None
+                    if data['history'] and len(data['history']) >= 2:
+                        prev_close = data['history'][-2]
+                    elif data['price'] and data['change_percent_24h'] is not None:
+                        prev_close = data['price'] / (1 + data['change_percent_24h'] / 100)
+                    
+                    latest_data['assets'][symbol] = {
+                        'price': data['price'],
+                        'change_pct': data['change_percent_24h'],
+                        'prev_close': prev_close,
+                        'name': asset['name'],
+                        'updated': data.get('last_updated', datetime.now().isoformat()),
+                        'unit': asset['unit'],
+                        'icon': asset['icon'],
+                        'category': category['id']
+                    }
+                    meta['successful_fetches'] += 1
+                
+                # 构建 history_data
+                if data['history'] and len(data['history']) > 0:
+                    # 生成日期序列（最近7天）
+                    dates = []
+                    for i in range(len(data['history'])):
+                        date = (datetime.now() - timedelta(days=len(data['history'])-1-i)).strftime('%Y-%m-%d')
+                        dates.append(date)
+                    
+                    history_data[symbol] = {
+                        'dates': dates,
+                        'prices': data['history']
+                    }
+                
+                meta['total_assets'] += 1
         
-        return all_data
+        latest_data['meta'] = meta
+        return latest_data, history_data
     
-    def save_data(self, data: Dict[str, Any]) -> None:
+    def save_data(self, latest_data: Dict[str, Any], history_data: Dict[str, Any]) -> None:
         """保存数据到文件"""
         # 确保 data 目录存在
         os.makedirs('data', exist_ok=True)
         
-        # 保存最新数据
+        # 保存最新数据（按 TDD.md 格式）
         with open('data/latest.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(latest_data, f, indent=2, ensure_ascii=False)
         
-        # 保存历史记录（追加到历史文件）
-        history_entry = {
-            'timestamp': data['last_updated'],
-            'meta': data['meta']
-        }
-        
-        try:
-            with open('data/history.json', 'r', encoding='utf-8') as f:
-                history = json.load(f)
-            if not isinstance(history, list):
-                history = []
-        except (FileNotFoundError, json.JSONDecodeError):
-            history = []
-        
-        history.append(history_entry)
-        # 保留最近100条记录
-        history = history[-100:]
-        
+        # 保存历史数据（按品种分组的7天历史）
         with open('data/history.json', 'w', encoding='utf-8') as f:
-            json.dump(history, f, indent=2, ensure_ascii=False)
+            json.dump(history_data, f, indent=2, ensure_ascii=False)
         
         logger.info("Data saved to data/latest.json and data/history.json")
 
 
+def test_single_asset(symbol: str):
+    """测试单个品种数据获取"""
+    fetcher = MarketDataFetcher()
+    
+    # 查找品种配置
+    asset_config = None
+    for category in fetcher.config['categories']:
+        for asset in category['assets']:
+            if asset['symbol'] == symbol:
+                asset_config = asset
+                break
+        if asset_config:
+            break
+    
+    if not asset_config:
+        logger.error(f"Symbol {symbol} not found in config.json")
+        return False
+    
+    logger.info(f"Testing {asset_config['name']} ({symbol})...")
+    
+    try:
+        if asset_config['source'] == 'yahoo':
+            data = fetcher.get_yahoo_data(symbol, asset_config['name'])
+        elif asset_config['source'] == 'binance':
+            data = fetcher.get_binance_data(symbol, asset_config['name'])
+        else:
+            logger.error(f"Unknown source: {asset_config['source']}")
+            return False
+        
+        if data['error']:
+            logger.error(f"❌ {symbol}: {data['error']}")
+            return False
+        else:
+            logger.info(f"✅ {symbol}: ${data['price']:.4f} ({data['change_percent_24h']:+.2f}%) | History: {len(data['history'])} points")
+            return True
+            
+    except Exception as e:
+        logger.error(f"❌ {symbol}: Exception - {e}")
+        return False
+
+
 def main():
     """主函数"""
+    import sys
+    
+    # 检查是否是测试模式
+    if len(sys.argv) == 3 and sys.argv[1] == '--test':
+        symbol = sys.argv[2]
+        success = test_single_asset(symbol)
+        exit(0 if success else 1)
+    
     try:
         fetcher = MarketDataFetcher()
         logger.info("Starting market data fetch...")
         
-        data = fetcher.fetch_all_data()
+        latest_data, history_data = fetcher.fetch_all_data()
         
         # 打印摘要
-        meta = data['meta']
+        meta = latest_data['meta']
         logger.info(f"Fetch completed: {meta['successful_fetches']}/{meta['total_assets']} successful")
         
         if meta['failed_fetches'] > 0:
             logger.warning(f"{meta['failed_fetches']} assets failed to fetch")
         
-        fetcher.save_data(data)
+        fetcher.save_data(latest_data, history_data)
         logger.info("Market data fetch completed successfully!")
         
     except Exception as e:
