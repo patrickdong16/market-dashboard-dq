@@ -40,11 +40,11 @@ class handler(BaseHTTPRequestHandler):
 
             chart_result = yahoo_data.get('chart', {}).get('result', [])
             if not chart_result:
-                self._respond(404, {'error': 'No data found'})
+                self._respond(404, {'error': 'No data found', 'raw': str(yahoo_data)[:500]})
                 return
 
             data = chart_result[0]
-            timestamps = data.get('timestamp', [])
+            timestamps = data.get('timestamp') or []
             quote = data.get('indicators', {}).get('quote', [{}])[0]
 
             opens = quote.get('open', [])
