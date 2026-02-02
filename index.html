@@ -715,6 +715,11 @@
                 
                 this.currentSymbol = symbol;
 
+                // Reset tab to 3M default
+                document.querySelectorAll('.time-range-button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.range === '3mo');
+                });
+
                 // If data not loaded yet, fetch it
                 if (!this.data.has(symbol)) {
                     try {
@@ -787,6 +792,11 @@
                     if (!response.ok) throw new Error('Failed to load chart');
                     const result = await response.json();
                     chartData = result.data || [];
+
+                    if (chartData.length === 0) {
+                        container.innerHTML = '<div class="error">休市中，暂无数据</div>';
+                        return;
+                    }
 
                     // Intraday uses line chart, daily uses candlestick
                     if (range === '1d') {
