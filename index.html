@@ -85,6 +85,53 @@
             display: block;
         }
 
+        /* Pull to Refresh */
+        .ptr-container {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .ptr-indicator {
+            text-align: center;
+            padding: 0;
+            height: 0;
+            overflow: hidden;
+            transition: height 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .ptr-indicator.pulling {
+            opacity: 1;
+        }
+
+        .ptr-indicator.refreshing {
+            height: 50px;
+            opacity: 1;
+        }
+
+        .ptr-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-top-color: #666;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .ptr-indicator.refreshing .ptr-spinner {
+            animation: ptr-spin 0.8s linear infinite;
+        }
+
+        @keyframes ptr-spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* List View */
         .list-view {
             padding: 0;
@@ -340,6 +387,10 @@
 
     <div class="container">
         <!-- List View -->
+        <div class="ptr-indicator" id="ptrIndicator">
+            <span class="ptr-spinner"></span>
+            <span class="ptr-text">下拉刷新</span>
+        </div>
         <div class="view list-view active" id="listView">
             <div id="marketList">
                 <div class="loading">
@@ -438,6 +489,81 @@
                         this.changeTimeRange(range);
                     }
                 });
+
+                // Pull to refresh
+                this.setupPullToRefresh();
+            }
+
+            setupPullToRefresh() {
+                const indicator = document.getElementById('ptrIndicator');
+                const textEl = indicator.querySelector('.ptr-text');
+                let startY = 0;
+                let pulling = false;
+                let refreshing = false;
+                const threshold = 70;
+
+                const onTouchStart = (e) => {
+                    if (refreshing) return;
+                    if (window.scrollY > 5) return;
+                    startY = e.touches[0].clientY;
+                    pulling = true;
+                };
+
+                const onTouchMove = (e) => {
+                    if (!pulling || refreshing) return;
+                    const dy = e.touches[0].clientY - startY;
+                    if (dy < 0) { pulling = false; return; }
+                    if (window.scrollY > 5) { pulling = false; return; }
+
+                    const progress = Math.min(dy / threshold, 1);
+                    const height = Math.min(dy * 0.5, 60);
+                    indicator.style.height = height + 'px';
+                    indicator.classList.add('pulling');
+
+                    if (dy >= threshold) {
+                        textEl.textContent = '松开刷新';
+                    } else {
+                        textEl.textContent = '下拉刷新';
+                    }
+                };
+
+                const onTouchEnd = async (e) => {
+                    if (!pulling) return;
+                    const dy = (e.changedTouches[0]?.clientY || 0) - startY;
+                    pulling = false;
+
+                    if (dy >= threshold && !refreshing) {
+                        refreshing = true;
+                        indicator.classList.remove('pulling');
+                        indicator.classList.add('refreshing');
+                        textEl.textContent = '刷新中...';
+
+                        try {
+                            await this.loadData();
+                            this.renderList();
+                            textEl.textContent = '已更新';
+                        } catch (err) {
+                            textEl.textContent = '刷新失败';
+                        }
+
+                        setTimeout(() => {
+                            indicator.classList.remove('refreshing');
+                            indicator.style.height = '0';
+                            indicator.style.opacity = '0';
+                            refreshing = false;
+                            setTimeout(() => {
+                                indicator.style.opacity = '';
+                            }, 200);
+                        }, 600);
+                    } else {
+                        indicator.classList.remove('pulling');
+                        indicator.style.height = '0';
+                    }
+                };
+
+                document.addEventListener('touchstart', onTouchStart, { passive: true });
+                document.addEventListener('touchmove', onTouchMove, { passive: true });
+                document.addEventListener('touchend', onTouchEnd, { passive: true });
             }
 
             async loadData() {
