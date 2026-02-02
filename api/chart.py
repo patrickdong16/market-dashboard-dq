@@ -27,7 +27,7 @@ class handler(BaseHTTPRequestHandler):
                 interval = '1d'
 
             yahoo_url = (
-                f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
+                f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
                 f"?range={range_val}&interval={interval}"
             )
 
