@@ -794,7 +794,7 @@
                     const asset = this.findAssetBySymbol(symbol);
                     let chartData;
                     
-                    const apiRange = range === '1d' ? '2d' : range;
+                    const apiRange = range === '1d' ? '5d' : range;
                     const interval = range === '1d' ? '5m' : '1d';
                     const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${apiRange}&interval=${interval}`);
                     if (!response.ok) throw new Error('Failed to load chart');
