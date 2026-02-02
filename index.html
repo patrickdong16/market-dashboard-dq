@@ -762,7 +762,7 @@
                         chartData = await this.loadBinanceChart(symbol, range);
                     } else {
                         // Use our API for other symbols
-                        const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${symbol}&range=${range}&interval=1d`);
+                        const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=1d`);
                         if (!response.ok) throw new Error('Failed to load chart');
                         chartData = await response.json();
                     }
