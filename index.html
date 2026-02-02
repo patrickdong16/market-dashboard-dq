@@ -955,24 +955,39 @@
 
                 const asset = this.findAssetBySymbol(this.currentSymbol);
                 const mult = asset ? (asset.price_multiplier || 1) : 1;
-                const lineData = data.map(d => ({
-                    time: d.time,
-                    value: d.close * mult
-                }));
 
+                // Build data with whitespace padding for full session axis
+                // Standard approach: whitespace data points define the time axis,
+                // actual data draws the line only where values exist.
+                const sessionRange = this.getTradingSessionRange(
+                    data.length > 0 ? data[0].time : Date.now() / 1000
+                );
+
+                const dataMap = new Map();
+                // Real data points
+                data.forEach(d => {
+                    dataMap.set(d.time, { time: d.time, value: d.close * mult });
+                });
+
+                if (sessionRange) {
+                    // Generate whitespace points every 5 minutes across full session
+                    for (let t = sessionRange.from; t <= sessionRange.to; t += 300) {
+                        if (!dataMap.has(t)) {
+                            dataMap.set(t, { time: t }); // whitespace: time only, no value
+                        }
+                    }
+                }
+
+                // Sort by time and set data
+                const lineData = Array.from(dataMap.values()).sort((a, b) => a.time - b.time);
                 lineSeries.setData(lineData);
 
-                // Set visible range to full trading session (show progress)
-                if (lineData.length > 0) {
-                    const sessionRange = this.getTradingSessionRange(lineData[0].time);
-                    if (sessionRange) {
-                        this.chart.timeScale().setVisibleRange({
-                            from: sessionRange.from,
-                            to: sessionRange.to,
-                        });
-                    } else {
-                        this.chart.timeScale().fitContent();
-                    }
+                // Set visible range to full trading session
+                if (sessionRange) {
+                    this.chart.timeScale().setVisibleRange({
+                        from: sessionRange.from,
+                        to: sessionRange.to,
+                    });
                 } else {
                     this.chart.timeScale().fitContent();
                 }
