@@ -18,9 +18,13 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(400, {'error': 'Missing symbol parameter'})
                 return
 
-            valid_ranges = ['5d', '1mo', '3mo', '6mo', '1y', '2y']
+            valid_ranges = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y']
             if range_val not in valid_ranges:
                 range_val = '3mo'
+
+            valid_intervals = ['1m', '2m', '5m', '15m', '30m', '60m', '90m', '1d', '5d', '1wk', '1mo']
+            if interval not in valid_intervals:
+                interval = '1d'
 
             yahoo_url = (
                 f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"

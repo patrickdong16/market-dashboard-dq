@@ -351,6 +351,7 @@
             </div>
             
             <div class="time-range-buttons" id="timeRangeButtons">
+                <button class="time-range-button" data-range="1d">今日</button>
                 <button class="time-range-button" data-range="5d">1W</button>
                 <button class="time-range-button active" data-range="3mo">3M</button>
                 <button class="time-range-button" data-range="1y">1Y</button>
@@ -448,21 +449,38 @@
                         });
                     });
 
-                    // Fetch Yahoo symbols
-                    const yahooPromise = yahooSymbols.length > 0 ? (async () => {
-                        const fetches = yahooSymbols.map(async (symbol) => {
+                    // Fetch all symbols via Yahoo (price from daily, sparkline from intraday)
+                    const allSymbols = [...yahooSymbols, ...binanceSymbols];
+                    const yahooPromise = allSymbols.length > 0 ? (async () => {
+                        const fetches = allSymbols.map(async (symbol) => {
                             try {
-                                const resp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
-                                if (!resp.ok) return null;
-                                const chartData = await resp.json();
-                                const points = chartData.data || [];
-                                if (points.length === 0) return null;
+                                // Get daily data for price & change
+                                const dailyResp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
+                                if (!dailyResp.ok) return null;
+                                const dailyData = await dailyResp.json();
+                                const dailyPoints = dailyData.data || [];
+                                if (dailyPoints.length === 0) return null;
 
-                                const latest = points[points.length - 1];
-                                const prevClose = points.length > 1 ? points[points.length - 2].close : latest.open;
+                                const latest = dailyPoints[dailyPoints.length - 1];
+                                const prevClose = dailyPoints.length > 1 ? dailyPoints[dailyPoints.length - 2].close : latest.open;
                                 const price = latest.close;
                                 const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
-                                const sparkline = points.slice(-5).map(p => p.close);
+
+                                // Get intraday data for sparkline
+                                let sparkline = [price];
+                                try {
+                                    const intraResp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=1d&interval=5m`);
+                                    if (intraResp.ok) {
+                                        const intraData = await intraResp.json();
+                                        const intraPoints = intraData.data || [];
+                                        if (intraPoints.length > 0) {
+                                            sparkline = intraPoints.map(p => p.close);
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Fallback: use daily closes
+                                    sparkline = dailyPoints.slice(-5).map(p => p.close);
+                                }
 
                                 return {
                                     symbol,
@@ -484,23 +502,7 @@
                         });
                     })() : Promise.resolve();
 
-                    // Fetch Binance symbols via server-side API (avoids GFW blocking)
-                    const cryptoPromise = binanceSymbols.length > 0 ? (async () => {
-                        try {
-                            const resp = await fetch(`${API_BASE_URL}/api/crypto?symbols=${binanceSymbols.join(',')}`);
-                            if (!resp.ok) return;
-                            const data = await resp.json();
-                            Object.entries(data).forEach(([symbol, info]) => {
-                                if (!info.error) {
-                                    this.data.set(symbol, info);
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('Failed to fetch crypto:', e);
-                        }
-                    })() : Promise.resolve();
-
-                    await Promise.all([yahooPromise, cryptoPromise]);
+                    await yahooPromise;
 
                 } catch (error) {
                     console.error('Data loading error:', error);
@@ -778,17 +780,18 @@
                     const asset = this.findAssetBySymbol(symbol);
                     let chartData;
                     
-                    if (asset && asset.source === 'binance') {
-                        // Use Binance Klines API for crypto
-                        chartData = await this.loadBinanceChart(symbol, range);
-                    } else {
-                        // Use our API for other symbols
-                        const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=1d`);
-                        if (!response.ok) throw new Error('Failed to load chart');
-                        chartData = await response.json();
-                    }
+                    const interval = range === '1d' ? '5m' : '1d';
+                    const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
+                    if (!response.ok) throw new Error('Failed to load chart');
+                    const result = await response.json();
+                    chartData = result.data || [];
 
-                    this.renderChart(chartData);
+                    // Intraday uses line chart, daily uses candlestick
+                    if (range === '1d') {
+                        this.renderLineChart(chartData);
+                    } else {
+                        this.renderChart(chartData);
+                    }
                 } catch (error) {
                     console.error('Chart loading error:', error);
                     container.innerHTML = '<div class="error">Failed to load chart</div>';
@@ -801,6 +804,60 @@
                 if (!response.ok) throw new Error('Crypto chart API error');
                 const result = await response.json();
                 return result.data || [];
+            }
+
+            renderLineChart(data) {
+                const container = document.getElementById('chartContainer');
+                container.innerHTML = '';
+
+                if (this.chart) {
+                    this.chart.remove();
+                }
+
+                this.chart = LightweightCharts.createChart(container, {
+                    width: container.clientWidth,
+                    height: 300,
+                    layout: {
+                        background: { color: '#18181b' },
+                        textColor: '#a1a1aa',
+                    },
+                    grid: {
+                        vertLines: { color: '#27272a' },
+                        horzLines: { color: '#27272a' },
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                    },
+                    timeScale: {
+                        borderColor: '#27272a',
+                        timeVisible: true,
+                        secondsVisible: false,
+                    },
+                    rightPriceScale: {
+                        borderColor: '#27272a',
+                    },
+                });
+
+                const lineSeries = this.chart.addAreaSeries({
+                    topColor: 'rgba(59, 130, 246, 0.4)',
+                    bottomColor: 'rgba(59, 130, 246, 0.0)',
+                    lineColor: '#3b82f6',
+                    lineWidth: 2,
+                });
+
+                const lineData = data.map(d => ({
+                    time: d.time,
+                    value: d.close
+                }));
+
+                lineSeries.setData(lineData);
+                this.chart.timeScale().fitContent();
+
+                window.addEventListener('resize', () => {
+                    if (this.chart) {
+                        this.chart.applyOptions({ width: container.clientWidth });
+                    }
+                });
             }
 
             renderChart(data) {
