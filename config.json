@@ -6,9 +6,10 @@
       "assets": [
         {
           "name": "黄金",
-          "symbol": "GC=F",
+          "symbol": "XAUUSD",
           "display_symbol": "XAUUSD",
-          "source": "yahoo",
+          "source": "goldprice",
+          "yahoo_symbol": "GC=F",
           "unit": "USD/oz",
           "icon": "🥇"
         },
@@ -23,9 +24,10 @@
         },
         {
           "name": "白银",
-          "symbol": "SI=F",
+          "symbol": "XAGUSD",
           "display_symbol": "XAGUSD",
-          "source": "yahoo",
+          "source": "goldprice",
+          "yahoo_symbol": "SI=F",
           "unit": "USD/oz",
           "icon": "🥈"
         },

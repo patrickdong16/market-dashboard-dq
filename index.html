@@ -578,17 +578,19 @@
                     // Collect all symbols for batch real-time fetch
                     const allSymbols = [];
                     const yahooSymbols = [];
+                    const allSources = [];
                     this.config.categories.forEach(category => {
                         category.assets.forEach(asset => {
                             allSymbols.push(asset.symbol);
                             yahooSymbols.push(asset.yahoo_symbol || asset.symbol);
+                            allSources.push(asset.source || 'eodhd');
                         });
                     });
 
                     if (allSymbols.length === 0) return;
 
-                    // Use /api/quotes for batch real-time data (EODHD primary, Yahoo fallback)
-                    const quotesUrl = `${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(allSymbols.join(','))}&yahoo_symbols=${encodeURIComponent(yahooSymbols.join(','))}`;
+                    // Use /api/quotes for batch real-time data (goldprice/EODHD primary, Yahoo fallback)
+                    const quotesUrl = `${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(allSymbols.join(','))}&yahoo_symbols=${encodeURIComponent(yahooSymbols.join(','))}&sources=${encodeURIComponent(allSources.join(','))}`;
                     const resp = await fetch(quotesUrl);
                     if (resp.ok) {
                         const quotesData = await resp.json();
@@ -796,7 +798,8 @@
                     try {
                         const asset = this.findAssetBySymbol(symbol);
                         const yahooSym = asset ? (asset.yahoo_symbol || symbol) : symbol;
-                        const resp = await fetch(`${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(symbol)}&yahoo_symbols=${encodeURIComponent(yahooSym)}`);
+                        const source = asset ? (asset.source || 'eodhd') : 'eodhd';
+                        const resp = await fetch(`${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(symbol)}&yahoo_symbols=${encodeURIComponent(yahooSym)}&sources=${encodeURIComponent(source)}`);
                         if (resp.ok) {
                             const quotesData = await resp.json();
                             if (quotesData[symbol]) {

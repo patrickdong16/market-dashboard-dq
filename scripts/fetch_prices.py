@@ -31,6 +31,7 @@ class MarketDataFetcher:
         self.config = self.load_config()
         self.timeout = 10
         self.max_retries = 3
+        self._goldprice_cache = None  # Cache goldprice API response within a run
         
     def load_config(self) -> Dict:
         """加载配置文件"""
@@ -157,6 +158,91 @@ class MarketDataFetcher:
         
         return result
     
+    def get_goldprice_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
+        """获取 GoldPrice.org 贵金属现货数据（XAU/XAG）"""
+        result = {
+            'symbol': symbol,
+            'name': name,
+            'price': None,
+            'change_percent_24h': None,
+            'prev_close': None,
+            'history': [],
+            'error': None,
+            'source': 'goldprice'
+        }
+
+        # Fetch from goldprice API (cache to avoid duplicate calls for XAU+XAG)
+        if self._goldprice_cache is None:
+            for retry in range(self.max_retries):
+                try:
+                    resp = requests.get(
+                        'https://data-asg.goldprice.org/dbXRates/USD',
+                        timeout=self.timeout,
+                        headers={'User-Agent': 'MarketDashboard/1.0'}
+                    )
+                    resp.raise_for_status()
+                    self._goldprice_cache = resp.json()
+                    break
+                except Exception as e:
+                    logger.warning(f"GoldPrice API attempt {retry + 1} failed: {e}")
+                    if retry < self.max_retries - 1:
+                        time.sleep(1)
+
+        if not self._goldprice_cache:
+            result['error'] = f"Failed to fetch GoldPrice data after {self.max_retries} retries"
+            logger.error(result['error'])
+            return result
+
+        try:
+            items = self._goldprice_cache.get('items', [])
+            if not items:
+                result['error'] = "No items in GoldPrice response"
+                logger.error(result['error'])
+                return result
+
+            item = items[0]
+
+            # Map symbol to goldprice fields
+            if symbol == 'XAUUSD':
+                price = float(item['xauPrice'])
+                change_pct = float(item['pcXau'])
+                prev_close = float(item['xauClose'])
+            elif symbol == 'XAGUSD':
+                price = float(item['xagPrice'])
+                change_pct = float(item['pcXag'])
+                prev_close = float(item['xagClose'])
+            else:
+                result['error'] = f"Unknown goldprice symbol: {symbol}"
+                logger.error(result['error'])
+                return result
+
+            result.update({
+                'price': price,
+                'change_percent_24h': change_pct,
+                'prev_close': prev_close,
+                'last_updated': datetime.now().isoformat()
+            })
+
+            # Get 7-day history from Yahoo (goldprice API has no historical data)
+            fallback_sym = yahoo_symbol or ('GC=F' if symbol == 'XAUUSD' else 'SI=F')
+            try:
+                ticker = yf.Ticker(fallback_sym)
+                hist = ticker.history(period="8d", interval="1d", timeout=self.timeout)
+                if not hist.empty:
+                    history_prices = hist['Close'].tail(7).tolist()
+                    result['history'] = [float(p) for p in history_prices]
+                    logger.info(f"  ↳ Yahoo history ({fallback_sym}): {len(result['history'])} points")
+            except Exception as e:
+                logger.warning(f"  ↳ Yahoo history fallback failed for {fallback_sym}: {e}")
+
+            logger.info(f"✓ {name} ({symbol}): ${price:.4f} ({change_pct:+.2f}%) [goldprice.org]")
+
+        except Exception as e:
+            result['error'] = f"Failed to parse GoldPrice data: {e}"
+            logger.error(result['error'])
+
+        return result
+
     def fetch_all_data(self) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """获取所有品种的数据，返回 (latest_data, history_data)"""
         latest_data = {
@@ -177,7 +263,9 @@ class MarketDataFetcher:
                 symbol = asset['symbol']
                 logger.info(f"Fetching data for {asset['name']} ({symbol})...")
                 
-                if asset['source'] == 'yahoo':
+                if asset['source'] == 'goldprice':
+                    data = self.get_goldprice_data(symbol, asset['name'], asset.get('yahoo_symbol'))
+                elif asset['source'] == 'yahoo':
                     data = self.get_yahoo_data(symbol, asset['name'])
                 elif asset['source'] == 'binance':
                     data = self.get_binance_data(symbol, asset['name'])
@@ -185,6 +273,9 @@ class MarketDataFetcher:
                     data = {
                         'symbol': symbol,
                         'name': asset['name'],
+                        'price': None,
+                        'change_percent_24h': None,
+                        'history': [],
                         'error': f"Unknown source: {asset['source']}",
                         'source': asset['source']
                     }
@@ -199,12 +290,13 @@ class MarketDataFetcher:
                     }
                     meta['failed_fetches'] += 1
                 else:
-                    # 计算前收盘价
-                    prev_close = None
-                    if data['history'] and len(data['history']) >= 2:
-                        prev_close = data['history'][-2]
-                    elif data['price'] and data['change_percent_24h'] is not None:
-                        prev_close = data['price'] / (1 + data['change_percent_24h'] / 100)
+                    # 计算前收盘价（优先使用数据源提供的值）
+                    prev_close = data.get('prev_close')
+                    if prev_close is None:
+                        if data['history'] and len(data['history']) >= 2:
+                            prev_close = data['history'][-2]
+                        elif data['price'] and data['change_percent_24h'] is not None:
+                            prev_close = data['price'] / (1 + data['change_percent_24h'] / 100)
                     
                     latest_data['assets'][symbol] = {
                         'price': data['price'],
@@ -273,7 +365,9 @@ def test_single_asset(symbol: str):
     logger.info(f"Testing {asset_config['name']} ({symbol})...")
     
     try:
-        if asset_config['source'] == 'yahoo':
+        if asset_config['source'] == 'goldprice':
+            data = fetcher.get_goldprice_data(symbol, asset_config['name'], asset_config.get('yahoo_symbol'))
+        elif asset_config['source'] == 'yahoo':
             data = fetcher.get_yahoo_data(symbol, asset_config['name'])
         elif asset_config['source'] == 'binance':
             data = fetcher.get_binance_data(symbol, asset_config['name'])

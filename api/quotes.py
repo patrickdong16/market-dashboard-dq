@@ -14,6 +14,51 @@ import traceback
 
 EODHD_API_KEY = os.environ.get('EODHD_API_KEY', '')
 
+# ─── GoldPrice.org helpers ───────────────────────────────────────
+
+def fetch_goldprice_data():
+    """Fetch real-time spot precious metals from GoldPrice.org.
+
+    Single API call returns both XAU and XAG data.
+    """
+    url = 'https://data-asg.goldprice.org/dbXRates/USD'
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'MarketDashboard/1.0'
+    })
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def parse_goldprice_symbol(data, symbol):
+    """Parse goldprice API response for a specific symbol (XAUUSD/XAGUSD)."""
+    items = data.get('items', [])
+    if not items:
+        return None
+
+    item = items[0]
+
+    if symbol == 'XAUUSD':
+        price = float(item['xauPrice'])
+        change_pct = float(item['pcXau'])
+        prev_close = float(item['xauClose'])
+    elif symbol == 'XAGUSD':
+        price = float(item['xagPrice'])
+        change_pct = float(item['pcXag'])
+        prev_close = float(item['xagClose'])
+    else:
+        return None
+
+    return {
+        'price': price,
+        'change_pct': round(change_pct, 4),
+        'prev_close': prev_close,
+        'sparkline': [],
+        'source': 'goldprice'
+    }
+
+
+# ─── EODHD / Yahoo helpers ──────────────────────────────────────
+
 
 def fetch_eodhd_realtime(symbol):
     """Fetch real-time quote from EODHD API."""
@@ -92,6 +137,7 @@ class handler(BaseHTTPRequestHandler):
             params = urllib.parse.parse_qs(parsed.query)
             symbols_str = params.get('symbols', [''])[0]
             yahoo_symbols_str = params.get('yahoo_symbols', [''])[0]
+            sources_str = params.get('sources', [''])[0]
 
             if not symbols_str:
                 self._respond(400, {'error': 'Missing symbols parameter'})
@@ -99,18 +145,43 @@ class handler(BaseHTTPRequestHandler):
 
             symbols_list = [s.strip() for s in symbols_str.split(',') if s.strip()]
             yahoo_list = [s.strip() for s in yahoo_symbols_str.split(',') if s.strip()]
+            sources_list = [s.strip() for s in sources_str.split(',') if s.strip()]
 
-            # Build yahoo fallback map: eodhd_symbol -> yahoo_symbol
+            # Build per-symbol maps
             yahoo_map = {}
+            source_map = {}
             for i, sym in enumerate(symbols_list):
                 if i < len(yahoo_list) and yahoo_list[i]:
                     yahoo_map[sym] = yahoo_list[i]
+                if i < len(sources_list) and sources_list[i]:
+                    source_map[sym] = sources_list[i]
 
             result = {}
             errors = []
 
+            # Pre-fetch goldprice data if any symbols need it (single API call)
+            goldprice_raw = None
+            goldprice_syms = [s for s in symbols_list if source_map.get(s) == 'goldprice']
+            if goldprice_syms:
+                try:
+                    goldprice_raw = fetch_goldprice_data()
+                except Exception as e:
+                    errors.append(f"goldprice API error: {str(e)}")
+
             for sym in symbols_list:
-                # Try EODHD first
+                source = source_map.get(sym, '')
+
+                # Try goldprice for precious metals
+                if source == 'goldprice' and goldprice_raw:
+                    try:
+                        data = parse_goldprice_symbol(goldprice_raw, sym)
+                        if data:
+                            result[sym] = data
+                            continue
+                    except Exception as e:
+                        errors.append(f"{sym}: goldprice parse error: {str(e)}")
+
+                # Try EODHD
                 if EODHD_API_KEY:
                     try:
                         data = fetch_eodhd_realtime(sym)
