@@ -112,10 +112,22 @@ def fetch_yahoo_realtime(symbol):
 
     meta = chart_result[0].get('meta', {})
     price = meta.get('regularMarketPrice', 0)
-    prev_close = meta.get('chartPreviousClose', 0)
+    # previousClose is the true previous day close
+    # chartPreviousClose is the close at the START of the requested range (wrong for daily change!)
+    prev_close = meta.get('previousClose') or meta.get('regularMarketPreviousClose', 0)
 
     if not price:
         return None
+
+    # If previousClose unavailable, try to compute from recent daily bars
+    if not prev_close:
+        closes = chart_result[0].get('indicators', {}).get('quote', [{}])[0].get('close', [])
+        # Filter out None values and take the second-to-last as prev close
+        valid_closes = [c for c in closes if c is not None]
+        if len(valid_closes) >= 2:
+            prev_close = valid_closes[-2]
+        else:
+            prev_close = meta.get('chartPreviousClose', 0)  # last resort
 
     change_pct = 0
     if price and prev_close and prev_close != 0:
