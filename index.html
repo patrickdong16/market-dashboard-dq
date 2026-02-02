@@ -436,17 +436,20 @@
             async loadData() {
                 try {
                     const yahooSymbols = [];
+                    const binanceSymbols = [];
                     
                     this.config.categories.forEach(category => {
                         category.assets.forEach(asset => {
                             if (asset.source === 'yahoo') {
                                 yahooSymbols.push(asset.symbol);
+                            } else if (asset.source === 'binance') {
+                                binanceSymbols.push(asset.symbol);
                             }
                         });
                     });
 
-                    if (yahooSymbols.length > 0) {
-                        // Fetch each symbol via /api/chart (reliable) instead of /api/quotes
+                    // Fetch Yahoo symbols
+                    const yahooPromise = yahooSymbols.length > 0 ? (async () => {
                         const fetches = yahooSymbols.map(async (symbol) => {
                             try {
                                 const resp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
@@ -475,12 +478,30 @@
                                 return null;
                             }
                         });
-
                         const results = await Promise.all(fetches);
                         results.forEach(r => {
                             if (r) this.data.set(r.symbol, r.data);
                         });
-                    }
+                    })() : Promise.resolve();
+
+                    // Fetch Binance symbols via server-side API (avoids GFW blocking)
+                    const cryptoPromise = binanceSymbols.length > 0 ? (async () => {
+                        try {
+                            const resp = await fetch(`${API_BASE_URL}/api/crypto?symbols=${binanceSymbols.join(',')}`);
+                            if (!resp.ok) return;
+                            const data = await resp.json();
+                            Object.entries(data).forEach(([symbol, info]) => {
+                                if (!info.error) {
+                                    this.data.set(symbol, info);
+                                }
+                            });
+                        } catch (e) {
+                            console.warn('Failed to fetch crypto:', e);
+                        }
+                    })() : Promise.resolve();
+
+                    await Promise.all([yahooPromise, cryptoPromise]);
+
                 } catch (error) {
                     console.error('Data loading error:', error);
                     throw error;
