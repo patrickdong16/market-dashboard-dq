@@ -6,41 +6,41 @@
       "assets": [
         {
           "name": "黄金",
-          "symbol": "GLD.US",
-          "yahoo_symbol": "GC=F",
-          "source": "eodhd",
-          "unit": "USD (ETF)",
+          "symbol": "GC=F",
+          "eodhd_symbol": "GLD.US",
+          "source": "yahoo",
+          "unit": "USD/oz",
           "icon": "🥇"
         },
         {
           "name": "白银",
-          "symbol": "SLV.US",
-          "yahoo_symbol": "SI=F",
-          "source": "eodhd",
-          "unit": "USD (ETF)",
+          "symbol": "SI=F",
+          "eodhd_symbol": "SLV.US",
+          "source": "yahoo",
+          "unit": "USD/oz",
           "icon": "🥈"
         },
         {
           "name": "铜",
-          "symbol": "COPX.US",
-          "yahoo_symbol": "HG=F",
-          "source": "eodhd",
-          "unit": "USD (ETF)",
+          "symbol": "HG=F",
+          "eodhd_symbol": "COPX.US",
+          "source": "yahoo",
+          "unit": "USD/lb",
           "icon": "🔶"
         },
         {
           "name": "镍",
-          "symbol": "NICK.LSE",
-          "yahoo_symbol": "NICK.L",
-          "source": "eodhd",
+          "symbol": "NICK.L",
+          "eodhd_symbol": "NICK.LSE",
+          "source": "yahoo",
           "unit": "USD (ETC)",
           "icon": "⚙️"
         },
         {
           "name": "稀土ETF",
-          "symbol": "REMX.US",
-          "yahoo_symbol": "REMX",
-          "source": "eodhd",
+          "symbol": "REMX",
+          "eodhd_symbol": "REMX.US",
+          "source": "yahoo",
           "unit": "USD",
           "icon": "💎"
         }
@@ -52,10 +52,10 @@
       "assets": [
         {
           "name": "WTI原油",
-          "symbol": "USO.US",
-          "yahoo_symbol": "CL=F",
-          "source": "eodhd",
-          "unit": "USD (ETF)",
+          "symbol": "CL=F",
+          "eodhd_symbol": "USO.US",
+          "source": "yahoo",
+          "unit": "USD/桶",
           "icon": "🛢️"
         }
       ]
