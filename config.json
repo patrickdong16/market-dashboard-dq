@@ -4,35 +4,102 @@
       "name": "贵金属",
       "id": "metals",
       "assets": [
-        {"name": "黄金", "symbol": "GC=F", "source": "yahoo", "unit": "USD/oz", "icon": "🥇"},
-        {"name": "白银", "symbol": "SI=F", "source": "yahoo", "unit": "USD/oz", "icon": "🥈"},
-        {"name": "铜", "symbol": "HG=F", "source": "yahoo", "unit": "USD/lb", "icon": "🔶"},
-        {"name": "镍", "symbol": "^SPGSNI", "source": "yahoo", "unit": "USD", "icon": "⚙️"},
-        {"name": "稀土ETF", "symbol": "REMX", "source": "yahoo", "unit": "USD", "icon": "💎"}
+        {
+          "name": "黄金",
+          "symbol": "GC=F",
+          "source": "yahoo",
+          "unit": "USD/oz",
+          "icon": "🥇"
+        },
+        {
+          "name": "白银",
+          "symbol": "SI=F",
+          "source": "yahoo",
+          "unit": "USD/oz",
+          "icon": "🥈"
+        },
+        {
+          "name": "铜",
+          "symbol": "HG=F",
+          "source": "yahoo",
+          "unit": "USD/吨",
+          "icon": "🔶",
+          "convert": "lb_to_ton"
+        },
+        {
+          "name": "镍",
+          "symbol": "NICK.L",
+          "source": "yahoo",
+          "unit": "USD (ETC)",
+          "icon": "⚙️"
+        },
+        {
+          "name": "稀土ETF",
+          "symbol": "REMX",
+          "source": "yahoo",
+          "unit": "USD",
+          "icon": "💎"
+        }
       ]
     },
     {
       "name": "大宗商品",
       "id": "commodities",
       "assets": [
-        {"name": "WTI原油", "symbol": "CL=F", "source": "yahoo", "unit": "USD/bbl", "icon": "🛢️"}
+        {
+          "name": "WTI原油",
+          "symbol": "CL=F",
+          "source": "yahoo",
+          "unit": "USD/bbl",
+          "icon": "🛢️"
+        }
       ]
     },
     {
       "name": "数字货币",
       "id": "crypto",
       "assets": [
-        {"name": "BTC", "symbol": "BTCUSDT", "source": "binance", "unit": "USD", "icon": "₿"},
-        {"name": "ETH", "symbol": "ETHUSDT", "source": "binance", "unit": "USD", "icon": "Ξ"}
+        {
+          "name": "BTC",
+          "symbol": "BTCUSDT",
+          "source": "binance",
+          "unit": "USD",
+          "icon": "₿"
+        },
+        {
+          "name": "ETH",
+          "symbol": "ETHUSDT",
+          "source": "binance",
+          "unit": "USD",
+          "icon": "Ξ"
+        }
       ]
     },
     {
       "name": "汇率",
       "id": "fx",
       "assets": [
-        {"name": "USD/CNY", "symbol": "CNY=X", "source": "yahoo", "unit": "", "icon": "🇨🇳"},
-        {"name": "USD/JPY", "symbol": "JPY=X", "source": "yahoo", "unit": "", "icon": "🇯🇵"},
-        {"name": "EUR/USD", "symbol": "EURUSD=X", "source": "yahoo", "unit": "", "icon": "🇪🇺"}
+        {
+          "name": "USD/CNY",
+          "symbol": "CNY=X",
+          "source": "yahoo",
+          "unit": "",
+          "icon": "🇨🇳"
+        },
+        {
+          "name": "USD/JPY",
+          "symbol": "JPY=X",
+          "source": "yahoo",
+          "unit": "",
+          "icon": "🇯🇵"
+        },
+        {
+          "name": "EUR/USD",
+          "symbol": "EURUSD=X",
+          "source": "yahoo",
+          "unit": "",
+          "icon": "🇪🇺"
+        }
       ]
     }
   ],
