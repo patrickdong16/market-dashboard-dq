@@ -843,11 +843,12 @@
 
                     // Intraday uses line chart, daily uses candlestick
                     if (range === '1d') {
-                        // Filter to last trading day only (from 2d range)
+                        // Filter to last trading session (~24h window)
+                        // Using time-based cutoff instead of date string (avoids timezone issues)
                         if (chartData.length > 0) {
                             const lastTime = chartData[chartData.length - 1].time;
-                            const lastDate = new Date(lastTime * 1000).toDateString();
-                            chartData = chartData.filter(d => new Date(d.time * 1000).toDateString() === lastDate);
+                            const cutoff = lastTime - 24 * 3600;
+                            chartData = chartData.filter(d => d.time >= cutoff);
                         }
                         this.renderLineChart(chartData);
                     } else {
