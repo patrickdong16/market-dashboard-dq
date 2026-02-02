@@ -6,37 +6,41 @@
       "assets": [
         {
           "name": "黄金",
-          "symbol": "GC=F",
-          "source": "yahoo",
-          "unit": "USD/oz",
+          "symbol": "GLD.US",
+          "yahoo_symbol": "GC=F",
+          "source": "eodhd",
+          "unit": "USD (ETF)",
           "icon": "🥇"
         },
         {
           "name": "白银",
-          "symbol": "SI=F",
-          "source": "yahoo",
-          "unit": "USD/oz",
+          "symbol": "SLV.US",
+          "yahoo_symbol": "SI=F",
+          "source": "eodhd",
+          "unit": "USD (ETF)",
           "icon": "🥈"
         },
         {
           "name": "铜",
-          "symbol": "HG=F",
-          "source": "yahoo",
-          "unit": "USD/吨",
-          "icon": "🔶",
-          "convert": "lb_to_ton"
+          "symbol": "COPX.US",
+          "yahoo_symbol": "HG=F",
+          "source": "eodhd",
+          "unit": "USD (ETF)",
+          "icon": "🔶"
         },
         {
           "name": "镍",
-          "symbol": "NICK.L",
-          "source": "yahoo",
+          "symbol": "NICK.LSE",
+          "yahoo_symbol": "NICK.L",
+          "source": "eodhd",
           "unit": "USD (ETC)",
           "icon": "⚙️"
         },
         {
           "name": "稀土ETF",
-          "symbol": "REMX",
-          "source": "yahoo",
+          "symbol": "REMX.US",
+          "yahoo_symbol": "REMX",
+          "source": "eodhd",
           "unit": "USD",
           "icon": "💎"
         }
@@ -48,9 +52,10 @@
       "assets": [
         {
           "name": "WTI原油",
-          "symbol": "CL=F",
-          "source": "yahoo",
-          "unit": "USD/bbl",
+          "symbol": "USO.US",
+          "yahoo_symbol": "CL=F",
+          "source": "eodhd",
+          "unit": "USD (ETF)",
           "icon": "🛢️"
         }
       ]
@@ -61,15 +66,17 @@
       "assets": [
         {
           "name": "BTC",
-          "symbol": "BTC-USD",
-          "source": "yahoo",
+          "symbol": "BTC-USD.CC",
+          "yahoo_symbol": "BTC-USD",
+          "source": "eodhd",
           "unit": "USD",
           "icon": "₿"
         },
         {
           "name": "ETH",
-          "symbol": "ETH-USD",
-          "source": "yahoo",
+          "symbol": "ETH-USD.CC",
+          "yahoo_symbol": "ETH-USD",
+          "source": "eodhd",
           "unit": "USD",
           "icon": "Ξ"
         }
@@ -81,22 +88,25 @@
       "assets": [
         {
           "name": "USD/CNY",
-          "symbol": "CNY=X",
-          "source": "yahoo",
+          "symbol": "USDCNY.FOREX",
+          "yahoo_symbol": "CNY=X",
+          "source": "eodhd",
           "unit": "",
           "icon": "🇨🇳"
         },
         {
           "name": "USD/JPY",
-          "symbol": "JPY=X",
-          "source": "yahoo",
+          "symbol": "USDJPY.FOREX",
+          "yahoo_symbol": "JPY=X",
+          "source": "eodhd",
           "unit": "",
           "icon": "🇯🇵"
         },
         {
           "name": "EUR/USD",
-          "symbol": "EURUSD=X",
-          "source": "yahoo",
+          "symbol": "EURUSD.FOREX",
+          "yahoo_symbol": "EURUSD=X",
+          "source": "eodhd",
           "unit": "",
           "icon": "🇪🇺"
         }

@@ -442,60 +442,29 @@
 
             async loadData() {
                 try {
+                    // Collect all symbols for batch real-time fetch
+                    const allSymbols = [];
                     const yahooSymbols = [];
-                    const binanceSymbols = [];
-                    
                     this.config.categories.forEach(category => {
                         category.assets.forEach(asset => {
-                            if (asset.source === 'yahoo') {
-                                yahooSymbols.push(asset.symbol);
-                            } else if (asset.source === 'binance') {
-                                binanceSymbols.push(asset.symbol);
-                            }
+                            allSymbols.push(asset.symbol);
+                            yahooSymbols.push(asset.yahoo_symbol || asset.symbol);
                         });
                     });
 
-                    // Fetch all symbols via Yahoo (price from daily, sparkline from intraday)
-                    const allSymbols = [...yahooSymbols, ...binanceSymbols];
-                    const yahooPromise = allSymbols.length > 0 ? (async () => {
-                        const fetches = allSymbols.map(async (symbol) => {
-                            try {
-                                // Get daily data for price & change
-                                const dailyResp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
-                                if (!dailyResp.ok) return null;
-                                const dailyData = await dailyResp.json();
-                                const dailyPoints = dailyData.data || [];
-                                if (dailyPoints.length === 0) return null;
+                    if (allSymbols.length === 0) return;
 
-                                const latest = dailyPoints[dailyPoints.length - 1];
-                                const prevClose = dailyPoints.length > 1 ? dailyPoints[dailyPoints.length - 2].close : latest.open;
-                                const price = latest.close;
-                                const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
-
-                                const sparkline = [];
-
-                                return {
-                                    symbol,
-                                    data: {
-                                        price: price,
-                                        change_pct: Math.round(change_pct * 10000) / 10000,
-                                        prev_close: prevClose,
-                                        sparkline: sparkline
-                                    }
-                                };
-                            } catch (e) {
-                                console.warn(`Failed to fetch ${symbol}:`, e);
-                                return null;
+                    // Use /api/quotes for batch real-time data (EODHD primary, Yahoo fallback)
+                    const quotesUrl = `${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(allSymbols.join(','))}&yahoo_symbols=${encodeURIComponent(yahooSymbols.join(','))}`;
+                    const resp = await fetch(quotesUrl);
+                    if (resp.ok) {
+                        const quotesData = await resp.json();
+                        for (const sym of allSymbols) {
+                            if (quotesData[sym]) {
+                                this.data.set(sym, quotesData[sym]);
                             }
-                        });
-                        const results = await Promise.all(fetches);
-                        results.forEach(r => {
-                            if (r) this.data.set(r.symbol, r.data);
-                        });
-                    })() : Promise.resolve();
-
-                    await yahooPromise;
-
+                        }
+                    }
                 } catch (error) {
                     console.error('Data loading error:', error);
                     throw error;
@@ -558,11 +527,6 @@
                 
                 let finalPrice = price;
                 
-                // Handle copper conversion
-                if (asset.convert === 'lb_to_ton') {
-                    finalPrice = price * 2204.62; // Convert USD/lb to USD/tonne
-                }
-                
                 if (finalPrice >= 1000) {
                     return `$${finalPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
                 } else if (finalPrice >= 1) {
@@ -618,64 +582,8 @@
             }
 
             setupWebSocket() {
-                const cryptoSymbols = [];
-                this.config.categories.forEach(category => {
-                    category.assets.forEach(asset => {
-                        if (asset.source === 'binance') {
-                            cryptoSymbols.push(asset.symbol.toLowerCase());
-                        }
-                    });
-                });
-
-                if (cryptoSymbols.length > 0) {
-                    const streams = cryptoSymbols.map(s => `${s}@ticker`).join('/');
-                    const wsUrl = `wss://stream.binance.com:9443/ws/${streams}`;
-                    
-                    this.websocket = new WebSocket(wsUrl);
-                    
-                    this.websocket.onopen = () => {
-                        console.log('WebSocket connected');
-                        this.updateStatus('online');
-                    };
-                    
-                    this.websocket.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        this.updateCryptoPrice(data);
-                    };
-                    
-                    this.websocket.onclose = () => {
-                        console.log('WebSocket disconnected, reconnecting...');
-                        setTimeout(() => this.setupWebSocket(), 3000);
-                    };
-                    
-                    this.websocket.onerror = () => {
-                        this.updateStatus('offline');
-                    };
-                }
-            }
-
-            updateCryptoPrice(tickerData) {
-                const symbol = tickerData.s;
-                const price = parseFloat(tickerData.c);
-                const changePercent = parseFloat(tickerData.P);
-                
-                // Update data store
-                this.data.set(symbol, {
-                    price: price,
-                    change_pct: changePercent,
-                    prev_close: price / (1 + changePercent / 100),
-                    sparkline: []
-                });
-                
-                // Update UI if on list view
-                if (this.getCurrentView() === 'list') {
-                    this.renderList();
-                }
-                
-                // Update detail view if showing this symbol
-                if (this.currentSymbol === symbol) {
-                    this.updateDetailHeader(symbol);
-                }
+                // WebSocket removed — all data fetched via EODHD/Yahoo REST APIs
+                // Periodic polling via startUpdateTimer() handles refreshes
             }
 
             startUpdateTimer() {
@@ -727,25 +635,19 @@
                     btn.classList.toggle('active', btn.dataset.range === '3mo');
                 });
 
-                // If data not loaded yet, fetch it
+                // If data not loaded yet, fetch real-time quote
                 if (!this.data.has(symbol)) {
                     try {
-                        const resp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=5d&interval=1d`);
+                        const asset = this.findAssetBySymbol(symbol);
+                        const yahooSym = asset ? (asset.yahoo_symbol || symbol) : symbol;
+                        const resp = await fetch(`${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(symbol)}&yahoo_symbols=${encodeURIComponent(yahooSym)}`);
                         if (resp.ok) {
-                            const chartData = await resp.json();
-                            const points = chartData.data || [];
-                            if (points.length > 0) {
-                                const latest = points[points.length - 1];
-                                const prevClose = points.length > 1 ? points[points.length - 2].close : latest.open;
-                                const price = latest.close;
-                                const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
-                                this.data.set(symbol, {
-                                    price, change_pct: Math.round(change_pct * 10000) / 10000,
-                                    prev_close: prevClose, sparkline: []
-                                });
+                            const quotesData = await resp.json();
+                            if (quotesData[symbol]) {
+                                this.data.set(symbol, quotesData[symbol]);
                             }
                         }
-                    } catch (e) { console.warn('Detail fetch failed:', e); }
+                    } catch (e) { console.warn('Detail quote fetch failed:', e); }
                 }
 
                 this.updateDetailHeader(symbol);
@@ -792,11 +694,18 @@
 
                 try {
                     const asset = this.findAssetBySymbol(symbol);
+                    const yahooSym = asset ? (asset.yahoo_symbol || symbol) : symbol;
                     let chartData;
                     
+                    // Map display range to API params
+                    // 1d → intraday 5m; 3mo/1y → eod daily
                     const apiRange = range === '1d' ? '5d' : range;
                     const interval = range === '1d' ? '5m' : '1d';
-                    const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${apiRange}&interval=${interval}`);
+                    const response = await fetch(
+                        `${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}`
+                        + `&range=${apiRange}&interval=${interval}`
+                        + `&yahoo_symbol=${encodeURIComponent(yahooSym)}`
+                    );
                     if (!response.ok) throw new Error('Failed to load chart');
                     const result = await response.json();
                     chartData = result.data || [];
@@ -824,13 +733,7 @@
                 }
             }
 
-            async loadBinanceChart(symbol, range) {
-                // Route through server-side API to bypass GFW
-                const response = await fetch(`${API_BASE_URL}/api/crypto-chart?symbol=${encodeURIComponent(symbol)}&range=${range}`);
-                if (!response.ok) throw new Error('Crypto chart API error');
-                const result = await response.json();
-                return result.data || [];
-            }
+            // Binance chart removed — crypto now uses EODHD via /api/chart
 
             renderLineChart(data) {
                 const container = document.getElementById('chartContainer');

@@ -1,20 +1,63 @@
+"""EODHD real-time quotes endpoint for Market Dashboard homepage.
+
+Primary: EODHD real-time API
+Fallback: Yahoo Finance v8 chart API
+"""
 from http.server import BaseHTTPRequestHandler
 import json
+import os
 import urllib.request
 import urllib.parse
 import urllib.error
 import traceback
 
 
-def fetch_symbol(symbol):
-    """Fetch current price for a single symbol using v8 chart API."""
-    encoded = urllib.parse.quote(symbol)
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}?range=5d&interval=1d&includePrePost=false"
+EODHD_API_KEY = os.environ.get('EODHD_API_KEY', '')
 
+
+def fetch_eodhd_realtime(symbol):
+    """Fetch real-time quote from EODHD API."""
+    url = (
+        f"https://eodhd.com/api/real-time/{urllib.parse.quote(symbol, safe='')}"
+        f"?api_token={EODHD_API_KEY}&fmt=json"
+    )
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'MarketDashboard/1.0'
+    })
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        data = json.loads(resp.read())
+
+    close_price = data.get('close')
+    prev_close = data.get('previousClose')
+    change_p = data.get('change_p')
+
+    # Validate: EODHD sometimes returns "NA" for unavailable symbols
+    if close_price in (None, 'NA', 0) or prev_close in (None, 'NA', 0):
+        return None
+
+    close_price = float(close_price)
+    prev_close = float(prev_close)
+    change_p = float(change_p) if change_p not in (None, 'NA') else 0
+
+    return {
+        'price': close_price,
+        'change_pct': round(change_p, 4),
+        'prev_close': prev_close,
+        'sparkline': [],
+        'source': 'eodhd'
+    }
+
+
+def fetch_yahoo_realtime(symbol):
+    """Fallback: fetch quote from Yahoo Finance."""
+    encoded = urllib.parse.quote(symbol)
+    url = (
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}"
+        f"?range=5d&interval=1d&includePrePost=false"
+    )
     req = urllib.request.Request(url, headers={
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
     })
-
     with urllib.request.urlopen(req, timeout=8) as resp:
         data = json.loads(resp.read())
 
@@ -26,22 +69,19 @@ def fetch_symbol(symbol):
     price = meta.get('regularMarketPrice', 0)
     prev_close = meta.get('chartPreviousClose', 0)
 
+    if not price:
+        return None
+
     change_pct = 0
     if price and prev_close and prev_close != 0:
         change_pct = ((price - prev_close) / prev_close) * 100
 
-    # Build sparkline from recent closes
-    closes = chart_result[0].get('indicators', {}).get('quote', [{}])[0].get('close', [])
-    sparkline = [c for c in closes if c is not None][-5:] if closes else []
-    if len(sparkline) < 5 and price:
-        base = price * 0.998
-        sparkline = [round(base + (price - base) * (i / 4), 4) for i in range(5)]
-
     return {
-        'price': price or 0,
+        'price': price,
         'change_pct': round(change_pct, 4),
         'prev_close': prev_close or 0,
-        'sparkline': [round(s, 4) for s in sparkline]
+        'sparkline': [],
+        'source': 'yahoo'
     }
 
 
@@ -50,29 +90,47 @@ class handler(BaseHTTPRequestHandler):
         try:
             parsed = urllib.parse.urlparse(self.path)
             params = urllib.parse.parse_qs(parsed.query)
-            symbols = params.get('symbols', [''])[0]
+            symbols_str = params.get('symbols', [''])[0]
+            yahoo_symbols_str = params.get('yahoo_symbols', [''])[0]
 
-            if not symbols:
+            if not symbols_str:
                 self._respond(400, {'error': 'Missing symbols parameter'})
                 return
 
-            symbols_list = [s.strip() for s in symbols.split(',') if s.strip()]
+            symbols_list = [s.strip() for s in symbols_str.split(',') if s.strip()]
+            yahoo_list = [s.strip() for s in yahoo_symbols_str.split(',') if s.strip()]
+
+            # Build yahoo fallback map: eodhd_symbol -> yahoo_symbol
+            yahoo_map = {}
+            for i, sym in enumerate(symbols_list):
+                if i < len(yahoo_list) and yahoo_list[i]:
+                    yahoo_map[sym] = yahoo_list[i]
 
             result = {}
             errors = []
+
             for sym in symbols_list:
+                # Try EODHD first
+                if EODHD_API_KEY:
+                    try:
+                        data = fetch_eodhd_realtime(sym)
+                        if data:
+                            result[sym] = data
+                            continue
+                    except Exception as e:
+                        errors.append(f"{sym}: EODHD error: {str(e)}")
+
+                # Fallback to Yahoo
+                yahoo_sym = yahoo_map.get(sym, sym)
                 try:
-                    data = fetch_symbol(sym)
+                    data = fetch_yahoo_realtime(yahoo_sym)
                     if data:
                         result[sym] = data
-                    else:
-                        errors.append(f"{sym}: no data")
-                except urllib.error.URLError as e:
-                    errors.append(f"{sym}: URLError: {str(e)}")
-                except urllib.error.HTTPError as e:
-                    errors.append(f"{sym}: HTTP {e.code}: {e.reason}")
+                        continue
                 except Exception as e:
-                    errors.append(f"{sym}: {type(e).__name__}: {str(e)}")
+                    errors.append(f"{sym}: Yahoo fallback error ({yahoo_sym}): {str(e)}")
+
+                errors.append(f"{sym}: all sources failed")
 
             response = result
             if errors and not result:
@@ -99,7 +157,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self._cors_headers()
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Cache-Control', 'no-cache, no-store')
+        self.send_header('Cache-Control', 's-maxage=20')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
