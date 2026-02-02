@@ -919,6 +919,16 @@
                     crosshair: {
                         mode: LightweightCharts.CrosshairMode.Normal,
                     },
+                    handleScale: {
+                        axisPressedMouseMove: { time: true, price: true },
+                        pinch: true,
+                    },
+                    handleScroll: {
+                        mouseWheel: true,
+                        pressedMouseMove: true,
+                        horzTouchDrag: true,
+                        vertTouchDrag: false,
+                    },
                     localization: {
                         timeFormatter: (timestamp) => {
                             const d = new Date(timestamp * 1000);
@@ -934,6 +944,10 @@
                         borderColor: '#e0e0e5',
                         timeVisible: true,
                         secondsVisible: false,
+                        fixLeftEdge: true,
+                        fixRightEdge: true,
+                        rightOffset: 5,
+                        minBarSpacing: 1,
                         tickMarkFormatter: (timestamp) => {
                             const d = new Date(timestamp * 1000);
                             return d.toLocaleTimeString('en-US', {
@@ -1067,9 +1081,10 @@
                 const isUSEquity = sym.includes('.US');
                 const isCrypto = sym.includes('.CC') || sym.includes('-USD');
                 const isForex = sym.includes('.FOREX') || sym.includes('=X');
+                const isGoldPrice = sym === 'XAUUSD' || sym === 'XAGUSD';
 
-                // Crypto & Forex: last 24h, no session filtering
-                if (isCrypto || isForex) {
+                // Crypto, Forex & spot precious metals: last 24h, no session filtering
+                if (isCrypto || isForex || isGoldPrice) {
                     if (data.length > 0) {
                         const lastTime = data[data.length - 1].time;
                         const cutoff = lastTime - 24 * 3600;
@@ -1124,9 +1139,10 @@
                 const isUSEquity = sym.includes('.US');
                 const isCrypto = sym.includes('.CC') || sym.includes('-USD');
                 const isForex = sym.includes('.FOREX') || sym.includes('=X');
+                const isGoldPrice = sym === 'XAUUSD' || sym === 'XAGUSD';
 
-                // Crypto/Forex: just fit content (24h)
-                if (isCrypto || isForex) return null;
+                // Crypto, Forex & spot precious metals: just fit content (24h)
+                if (isCrypto || isForex || isGoldPrice) return null;
 
                 const et = this.getETDate();
 
@@ -1168,8 +1184,22 @@
                     crosshair: {
                         mode: LightweightCharts.CrosshairMode.Normal,
                     },
+                    handleScale: {
+                        axisPressedMouseMove: { time: true, price: true },
+                        pinch: true,
+                    },
+                    handleScroll: {
+                        mouseWheel: true,
+                        pressedMouseMove: true,
+                        horzTouchDrag: true,
+                        vertTouchDrag: false,
+                    },
                     timeScale: {
                         borderColor: '#e0e0e5',
+                        fixLeftEdge: true,
+                        fixRightEdge: true,
+                        rightOffset: 3,
+                        minBarSpacing: 6,
                     },
                     rightPriceScale: {
                         borderColor: '#e0e0e5',
