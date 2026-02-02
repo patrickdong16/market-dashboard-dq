@@ -3,9 +3,30 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
+import re
+import http.cookiejar
 
 
 class handler(BaseHTTPRequestHandler):
+
+    @staticmethod
+    def _get_yahoo_crumb():
+        """Get Yahoo Finance crumb and cookies for authenticated API access."""
+        cj = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')]
+
+        # Step 1: Get consent cookies
+        opener.open('https://fc.yahoo.com', timeout=5)
+
+        # Step 2: Get crumb
+        crumb_req = urllib.request.Request('https://query2.finance.yahoo.com/v1/test/getcrumb')
+        crumb_req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+        with opener.open(crumb_req, timeout=5) as resp:
+            crumb = resp.read().decode('utf-8')
+
+        return crumb, cj, opener
+
     def do_GET(self):
         try:
             parsed = urllib.parse.urlparse(self.path)
@@ -26,16 +47,19 @@ class handler(BaseHTTPRequestHandler):
             if interval not in valid_intervals:
                 interval = '1d'
 
+            # Get crumb + cookies for authenticated access
+            crumb, cj, opener = self._get_yahoo_crumb()
+
             yahoo_url = (
                 f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}"
-                f"?range={range_val}&interval={interval}"
+                f"?range={range_val}&interval={interval}&crumb={urllib.parse.quote(crumb)}"
             )
 
             req = urllib.request.Request(yahoo_url, headers={
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
             })
 
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with opener.open(req, timeout=10) as resp:
                 yahoo_data = json.loads(resp.read())
 
             chart_result = yahoo_data.get('chart', {}).get('result', [])
