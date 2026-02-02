@@ -954,13 +954,74 @@
                 }));
 
                 lineSeries.setData(lineData);
-                this.chart.timeScale().fitContent();
+
+                // Set visible range to full trading session (show progress)
+                if (lineData.length > 0) {
+                    const sessionRange = this.getTradingSessionRange(lineData[0].time);
+                    if (sessionRange) {
+                        this.chart.timeScale().setVisibleRange({
+                            from: sessionRange.from,
+                            to: sessionRange.to,
+                        });
+                    } else {
+                        this.chart.timeScale().fitContent();
+                    }
+                } else {
+                    this.chart.timeScale().fitContent();
+                }
 
                 window.addEventListener('resize', () => {
                     if (this.chart) {
                         this.chart.applyOptions({ width: container.clientWidth });
                     }
                 });
+            }
+
+            getTradingSessionRange(firstTimestamp) {
+                const asset = this.findAssetBySymbol(this.currentSymbol);
+                if (!asset) return null;
+
+                const sym = asset.symbol;
+                // Get current date in ET
+                const nowET = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+                const etDate = new Date(nowET);
+                const year = etDate.getFullYear();
+                const month = etDate.getMonth();
+                const day = etDate.getDate();
+
+                // Futures: ~18:00 ET previous day to 17:00 ET current day
+                const isFutures = sym.includes('=F') || sym.includes('.L');
+                // US ETFs/Stocks: 09:30 - 16:00 ET
+                const isUSEquity = sym.includes('.US') || (!sym.includes('.') && !sym.includes('-') && !sym.includes('FOREX'));
+
+                if (isFutures) {
+                    // Session: previous day 18:00 ET to today 17:00 ET
+                    const sessionEnd = new Date(year, month, day, 17, 0, 0);
+                    const sessionStart = new Date(sessionEnd.getTime() - 23 * 3600000);
+                    // Convert ET dates to UTC timestamps
+                    const startUTC = sessionStart.getTime() / 1000 + this.getETOffset() * 3600;
+                    const endUTC = sessionEnd.getTime() / 1000 + this.getETOffset() * 3600;
+                    return { from: startUTC, to: endUTC };
+                } else if (isUSEquity) {
+                    // Session: 09:30 - 16:00 ET
+                    const sessionStart = new Date(year, month, day, 9, 30, 0);
+                    const sessionEnd = new Date(year, month, day, 16, 0, 0);
+                    const startUTC = sessionStart.getTime() / 1000 + this.getETOffset() * 3600;
+                    const endUTC = sessionEnd.getTime() / 1000 + this.getETOffset() * 3600;
+                    return { from: startUTC, to: endUTC };
+                }
+
+                // Crypto/Forex: just fit content (24h)
+                return null;
+            }
+
+            getETOffset() {
+                // Get current ET offset from UTC (handles DST)
+                const now = new Date();
+                const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+                const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+                const diffMs = new Date(utcStr).getTime() - new Date(etStr).getTime();
+                return diffMs / 3600000; // hours offset (5 for EST, 4 for EDT)
             }
 
             renderChart(data) {
