@@ -18,7 +18,7 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(400, {'error': 'Missing symbol parameter'})
                 return
 
-            valid_ranges = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y']
+            valid_ranges = ['1d', '2d', '5d', '1mo', '3mo', '6mo', '1y', '2y']
             if range_val not in valid_ranges:
                 range_val = '3mo'
 

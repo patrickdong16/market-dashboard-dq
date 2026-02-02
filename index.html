@@ -794,19 +794,26 @@
                     const asset = this.findAssetBySymbol(symbol);
                     let chartData;
                     
+                    const apiRange = range === '1d' ? '2d' : range;
                     const interval = range === '1d' ? '5m' : '1d';
-                    const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`);
+                    const response = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=${apiRange}&interval=${interval}`);
                     if (!response.ok) throw new Error('Failed to load chart');
                     const result = await response.json();
                     chartData = result.data || [];
 
                     if (chartData.length === 0) {
-                        container.innerHTML = '<div class="error">休市中，暂无数据</div>';
+                        container.innerHTML = '<div class="error">暂无数据</div>';
                         return;
                     }
 
                     // Intraday uses line chart, daily uses candlestick
                     if (range === '1d') {
+                        // Filter to last trading day only (from 2d range)
+                        if (chartData.length > 0) {
+                            const lastTime = chartData[chartData.length - 1].time;
+                            const lastDate = new Date(lastTime * 1000).toDateString();
+                            chartData = chartData.filter(d => new Date(d.time * 1000).toDateString() === lastDate);
+                        }
                         this.renderLineChart(chartData);
                     } else {
                         this.renderChart(chartData);
