@@ -1,0 +1,234 @@
+{
+  "categories": [
+    {
+      "name": "贵金属",
+      "id": "metals",
+      "assets": [
+        {
+          "symbol": "GC=F",
+          "name": "黄金",
+          "price": 4729.5,
+          "change_percent_24h": 0.33093824602626026,
+          "history": [
+            5079.7001953125,
+            5079.89990234375,
+            5301.60009765625,
+            5318.39990234375,
+            4713.89990234375,
+            4729.5
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:25.762942",
+          "unit": "USD/oz",
+          "icon": "🥇",
+          "category": "metals"
+        },
+        {
+          "symbol": "SI=F",
+          "name": "白银",
+          "price": 80.32499694824219,
+          "change_percent_24h": 2.599305158918756,
+          "history": [
+            115.08000183105469,
+            105.52300262451172,
+            113.11100006103516,
+            114.03700256347656,
+            78.29000091552734,
+            80.32499694824219
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:26.916917",
+          "unit": "USD/oz",
+          "icon": "🥈",
+          "category": "metals"
+        },
+        {
+          "symbol": "HG=F",
+          "name": "铜",
+          "price": 5.767000198364258,
+          "change_percent_24h": -2.204504684074148,
+          "history": [
+            5.984000205993652,
+            5.828499794006348,
+            5.892499923706055,
+            6.17549991607666,
+            5.896999835968018,
+            5.767000198364258
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:27.448837",
+          "unit": "USD/lb",
+          "icon": "🔶",
+          "category": "metals"
+        },
+        {
+          "symbol": "^SPGSNI",
+          "name": "镍",
+          "price": null,
+          "change_percent_24h": null,
+          "history": [],
+          "error": "Failed to fetch data for 镍 after 3 retries",
+          "source": "yahoo",
+          "unit": "USD",
+          "icon": "⚙️",
+          "category": "metals"
+        },
+        {
+          "symbol": "REMX",
+          "name": "稀土ETF",
+          "price": 85.62999725341797,
+          "change_percent_24h": -8.44648949961025,
+          "history": [
+            95.58000183105469,
+            98.45999908447266,
+            96.91000366210938,
+            97.61000061035156,
+            97.5199966430664,
+            93.52999877929688,
+            85.62999725341797
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:40.641506",
+          "unit": "USD",
+          "icon": "💎",
+          "category": "metals"
+        }
+      ]
+    },
+    {
+      "name": "大宗商品",
+      "id": "commodities",
+      "assets": [
+        {
+          "symbol": "CL=F",
+          "name": "WTI原油",
+          "price": 61.88999938964844,
+          "change_percent_24h": -5.09124327777326,
+          "history": [
+            60.630001068115234,
+            62.38999938964844,
+            63.209999084472656,
+            65.41999816894531,
+            65.20999908447266,
+            61.88999938964844
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:41.163176",
+          "unit": "USD/bbl",
+          "icon": "🛢️",
+          "category": "commodities"
+        }
+      ]
+    },
+    {
+      "name": "数字货币",
+      "id": "crypto",
+      "assets": [
+        {
+          "symbol": "BTCUSDT",
+          "name": "BTC",
+          "price": null,
+          "change_percent_24h": null,
+          "history": [],
+          "error": "Failed to fetch Binance data: 451 Client Error:  for url: https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT",
+          "source": "binance",
+          "unit": "USD",
+          "icon": "₿",
+          "category": "crypto"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "name": "ETH",
+          "price": null,
+          "change_percent_24h": null,
+          "history": [],
+          "error": "Failed to fetch Binance data: 451 Client Error:  for url: https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT",
+          "source": "binance",
+          "unit": "USD",
+          "icon": "Ξ",
+          "category": "crypto"
+        }
+      ]
+    },
+    {
+      "name": "汇率",
+      "id": "fx",
+      "assets": [
+        {
+          "symbol": "CNY=X",
+          "name": "USD/CNY",
+          "price": 6.942699909210205,
+          "change_percent_24h": -0.1696784645549113,
+          "history": [
+            6.963699817657471,
+            6.972599983215332,
+            6.972599983215332,
+            6.95419979095459,
+            6.954500198364258,
+            6.954500198364258,
+            6.942699909210205
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:44.346720",
+          "unit": "",
+          "icon": "🇨🇳",
+          "category": "fx"
+        },
+        {
+          "symbol": "JPY=X",
+          "name": "USD/JPY",
+          "price": 154.77999877929688,
+          "change_percent_24h": 1.0999672191569294,
+          "history": [
+            158.45599365234375,
+            158.50100708007812,
+            155.16600036621094,
+            154.33599853515625,
+            152.4530029296875,
+            153.0959930419922,
+            154.77999877929688
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:44.890087",
+          "unit": "",
+          "icon": "🇯🇵",
+          "category": "fx"
+        },
+        {
+          "symbol": "EURUSD=X",
+          "name": "EUR/USD",
+          "price": 1.182732105255127,
+          "change_percent_24h": -1.256060975661946,
+          "history": [
+            1.1672970056533813,
+            1.1754610538482666,
+            1.1858457326889038,
+            1.1876484155654907,
+            1.2017642259597778,
+            1.1977769136428833,
+            1.182732105255127
+          ],
+          "error": null,
+          "source": "yahoo",
+          "last_updated": "2026-02-02T21:45:45.405607",
+          "unit": "",
+          "icon": "🇪🇺",
+          "category": "fx"
+        }
+      ]
+    }
+  ],
+  "last_updated": "2026-02-02T21:45:22.413603",
+  "meta": {
+    "total_assets": 11,
+    "successful_fetches": 8,
+    "failed_fetches": 3
+  }
+}
