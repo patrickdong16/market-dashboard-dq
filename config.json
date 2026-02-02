@@ -8,25 +8,40 @@
           "name": "黄金",
           "symbol": "GC=F",
           "display_symbol": "XAUUSD",
-          "eodhd_symbol": "GLD.US",
           "source": "yahoo",
           "unit": "USD/oz",
+          "icon": "🥇"
+        },
+        {
+          "name": "黄金ETF",
+          "symbol": "GLD.US",
+          "display_symbol": "GLD",
+          "yahoo_symbol": "GLD",
+          "source": "eodhd",
+          "unit": "USD",
           "icon": "🥇"
         },
         {
           "name": "白银",
           "symbol": "SI=F",
           "display_symbol": "XAGUSD",
-          "eodhd_symbol": "SLV.US",
           "source": "yahoo",
           "unit": "USD/oz",
+          "icon": "🥈"
+        },
+        {
+          "name": "白银ETF",
+          "symbol": "SLV.US",
+          "display_symbol": "SLV",
+          "yahoo_symbol": "SLV",
+          "source": "eodhd",
+          "unit": "USD",
           "icon": "🥈"
         },
         {
           "name": "铜",
           "symbol": "HG=F",
           "display_symbol": "HG",
-          "eodhd_symbol": "COPX.US",
           "source": "yahoo",
           "unit": "USD/lb",
           "icon": "🔶"
@@ -35,17 +50,16 @@
           "name": "镍",
           "symbol": "NICK.L",
           "display_symbol": "NICK",
-          "eodhd_symbol": "NICK.LSE",
           "source": "yahoo",
           "unit": "USD (ETC)",
           "icon": "⚙️"
         },
         {
           "name": "稀土ETF",
-          "symbol": "REMX",
+          "symbol": "REMX.US",
           "display_symbol": "REMX",
-          "eodhd_symbol": "REMX.US",
-          "source": "yahoo",
+          "yahoo_symbol": "REMX",
+          "source": "eodhd",
           "unit": "USD",
           "icon": "💎"
         }
@@ -59,9 +73,17 @@
           "name": "WTI原油",
           "symbol": "CL=F",
           "display_symbol": "WTI",
-          "eodhd_symbol": "USO.US",
           "source": "yahoo",
           "unit": "USD/桶",
+          "icon": "🛢️"
+        },
+        {
+          "name": "原油ETF",
+          "symbol": "USO.US",
+          "display_symbol": "USO",
+          "yahoo_symbol": "USO",
+          "source": "eodhd",
+          "unit": "USD",
           "icon": "🛢️"
         }
       ]
