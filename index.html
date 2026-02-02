@@ -132,6 +132,12 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Hide TradingView attribution */
+        [class*="attribution"], 
+        a[href*="tradingview.com"] {
+            display: none !important;
+        }
+
         /* List View */
         .list-view {
             padding: 0;
@@ -983,46 +989,39 @@
                 if (!asset) return null;
 
                 const sym = asset.symbol;
-                // Get current date in ET
-                const nowET = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-                const etDate = new Date(nowET);
-                const year = etDate.getFullYear();
-                const month = etDate.getMonth();
-                const day = etDate.getDate();
+                
+                // Get ET offset from UTC in seconds (handles DST automatically)
+                const now = new Date();
+                const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+                const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+                const etOffsetSec = (new Date(utcStr).getTime() - new Date(etStr).getTime()) / 1000;
+
+                // Get today's date in ET
+                const etParts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                }).formatToParts(now);
+                const etYear = parseInt(etParts.find(p => p.type === 'year').value);
+                const etMonth = parseInt(etParts.find(p => p.type === 'month').value) - 1;
+                const etDay = parseInt(etParts.find(p => p.type === 'day').value);
 
                 // Futures: ~18:00 ET previous day to 17:00 ET current day
                 const isFutures = sym.includes('=F') || sym.includes('.L');
-                // US ETFs/Stocks: 09:30 - 16:00 ET
-                const isUSEquity = sym.includes('.US') || (!sym.includes('.') && !sym.includes('-') && !sym.includes('FOREX'));
+                // US ETFs/Stocks
+                const isUSEquity = sym.includes('.US');
 
                 if (isFutures) {
-                    // Session: previous day 18:00 ET to today 17:00 ET
-                    const sessionEnd = new Date(year, month, day, 17, 0, 0);
-                    const sessionStart = new Date(sessionEnd.getTime() - 23 * 3600000);
-                    // Convert ET dates to UTC timestamps
-                    const startUTC = sessionStart.getTime() / 1000 + this.getETOffset() * 3600;
-                    const endUTC = sessionEnd.getTime() / 1000 + this.getETOffset() * 3600;
+                    const startUTC = Date.UTC(etYear, etMonth, etDay - 1, 18, 0) / 1000 + etOffsetSec;
+                    const endUTC = Date.UTC(etYear, etMonth, etDay, 17, 0) / 1000 + etOffsetSec;
                     return { from: startUTC, to: endUTC };
                 } else if (isUSEquity) {
-                    // Session: 09:30 - 16:00 ET
-                    const sessionStart = new Date(year, month, day, 9, 30, 0);
-                    const sessionEnd = new Date(year, month, day, 16, 0, 0);
-                    const startUTC = sessionStart.getTime() / 1000 + this.getETOffset() * 3600;
-                    const endUTC = sessionEnd.getTime() / 1000 + this.getETOffset() * 3600;
+                    const startUTC = Date.UTC(etYear, etMonth, etDay, 9, 30) / 1000 + etOffsetSec;
+                    const endUTC = Date.UTC(etYear, etMonth, etDay, 16, 0) / 1000 + etOffsetSec;
                     return { from: startUTC, to: endUTC };
                 }
 
                 // Crypto/Forex: just fit content (24h)
                 return null;
-            }
-
-            getETOffset() {
-                // Get current ET offset from UTC (handles DST)
-                const now = new Date();
-                const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
-                const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-                const diffMs = new Date(utcStr).getTime() - new Date(etStr).getTime();
-                return diffMs / 3600000; // hours offset (5 for EST, 4 for EDT)
             }
 
             renderChart(data) {
