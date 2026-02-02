@@ -61,15 +61,15 @@
       "assets": [
         {
           "name": "BTC",
-          "symbol": "BTCUSDT",
-          "source": "binance",
+          "symbol": "BTC-USD",
+          "source": "yahoo",
           "unit": "USD",
           "icon": "₿"
         },
         {
           "name": "ETH",
-          "symbol": "ETHUSDT",
-          "source": "binance",
+          "symbol": "ETH-USD",
+          "source": "yahoo",
           "unit": "USD",
           "icon": "Ξ"
         }
