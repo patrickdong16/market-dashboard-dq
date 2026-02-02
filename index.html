@@ -718,11 +718,31 @@
                     this.loadData().then(() => {
                         if (this.getCurrentView() === 'list') {
                             this.renderList();
+                        } else if (this.currentSymbol) {
+                            // Update detail page price header
+                            this.updateDetailPrice(this.currentSymbol);
                         }
                     }).catch(error => {
                         console.error('Update error:', error);
                     });
                 }, UPDATE_INTERVAL);
+            }
+
+            updateDetailPrice(symbol) {
+                const data = this.data.get(symbol) || {};
+                const asset = this.findAssetBySymbol(symbol);
+                const rawPrice = (data.price || 0) * (asset ? (asset.price_multiplier || 1) : 1);
+                const price = this.formatPrice(rawPrice, asset || {});
+                document.getElementById('detailPrice').textContent = price;
+
+                const changePercent = data.change_pct || 0;
+                const changeClass = changePercent > 0 ? 'positive' : changePercent < 0 ? 'negative' : 'neutral';
+                const changeSymbol = changePercent > 0 ? '+' : '';
+                const changeEl = document.getElementById('detailChange');
+                if (changeEl) {
+                    changeEl.textContent = `${changeSymbol}${changePercent.toFixed(2)}%`;
+                    changeEl.className = `detail-change ${changeClass}`;
+                }
             }
 
             getCurrentView() {

@@ -157,7 +157,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self._cors_headers()
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Cache-Control', 's-maxage=20')
+        self.send_header('Cache-Control', 's-maxage=10, stale-while-revalidate=5')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
