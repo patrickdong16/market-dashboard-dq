@@ -626,7 +626,8 @@
 
             renderAssetRow(asset) {
                 const data = this.data.get(asset.symbol) || {};
-                const price = this.formatPrice(data.price || 0, asset);
+                const rawPrice = (data.price || 0) * (asset.price_multiplier || 1);
+                const price = this.formatPrice(rawPrice, asset);
                 const changePercent = data.change_pct || 0;
                 const changeClass = changePercent > 0 ? 'positive' : changePercent < 0 ? 'negative' : 'neutral';
                 const changeSymbol = changePercent > 0 ? '+' : '';
@@ -787,7 +788,8 @@
                 document.getElementById('headerTitle').textContent = asset ? asset.name : symbol;
                 document.getElementById('detailName').textContent = asset ? `${asset.name} (${asset.display_symbol || symbol})` : symbol;
                 
-                const price = this.formatPrice(data.price || 0, asset || {});
+                const rawPrice = (data.price || 0) * (asset ? (asset.price_multiplier || 1) : 1);
+                const price = this.formatPrice(rawPrice, asset || {});
                 document.getElementById('detailPrice').textContent = price;
                 
                 const changePercent = data.change_pct || 0;
@@ -901,9 +903,11 @@
                     lineWidth: 2,
                 });
 
+                const asset = this.findAssetBySymbol(this.currentSymbol);
+                const mult = asset ? (asset.price_multiplier || 1) : 1;
                 const lineData = data.map(d => ({
                     time: d.time,
-                    value: d.close
+                    value: d.close * mult
                 }));
 
                 lineSeries.setData(lineData);
@@ -955,7 +959,17 @@
                     wickUpColor: '#00a061',
                 });
 
-                candleSeries.setData(data);
+                const asset2 = this.findAssetBySymbol(this.currentSymbol);
+                const mult2 = asset2 ? (asset2.price_multiplier || 1) : 1;
+                const chartData = mult2 !== 1 ? data.map(d => ({
+                    time: d.time,
+                    open: d.open * mult2,
+                    high: d.high * mult2,
+                    low: d.low * mult2,
+                    close: d.close * mult2,
+                })) : data;
+
+                candleSeries.setData(chartData);
                 this.chart.timeScale().fitContent();
 
                 // Handle resize

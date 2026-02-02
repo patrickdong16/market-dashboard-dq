@@ -43,8 +43,9 @@
           "symbol": "HG=F",
           "display_symbol": "HG",
           "source": "yahoo",
-          "unit": "USD/lb",
-          "icon": "🔶"
+          "unit": "USD/吨",
+          "icon": "🔶",
+          "price_multiplier": 2204.62
         },
         {
           "name": "铜矿ETF",
