@@ -466,20 +466,19 @@
                                 const price = latest.close;
                                 const change_pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
 
-                                // Get intraday data for sparkline
-                                let sparkline = [price];
+                                // Get intraday data for sparkline, fallback to daily
+                                let sparkline = dailyPoints.slice(-5).map(p => p.close);
                                 try {
                                     const intraResp = await fetch(`${API_BASE_URL}/api/chart?symbol=${encodeURIComponent(symbol)}&range=1d&interval=5m`);
                                     if (intraResp.ok) {
                                         const intraData = await intraResp.json();
                                         const intraPoints = intraData.data || [];
-                                        if (intraPoints.length > 0) {
+                                        if (intraPoints.length > 1) {
                                             sparkline = intraPoints.map(p => p.close);
                                         }
                                     }
                                 } catch (e) {
-                                    // Fallback: use daily closes
-                                    sparkline = dailyPoints.slice(-5).map(p => p.close);
+                                    // Keep daily fallback
                                 }
 
                                 return {
@@ -838,7 +837,7 @@
                     },
                 });
 
-                const lineSeries = this.chart.addAreaSeries({
+                const lineSeries = this.chart.addSeries(LightweightCharts.AreaSeries, {
                     topColor: 'rgba(59, 130, 246, 0.4)',
                     bottomColor: 'rgba(59, 130, 246, 0.0)',
                     lineColor: '#3b82f6',
@@ -890,7 +889,7 @@
                     },
                 });
 
-                const candleSeries = this.chart.addCandlestickSeries({
+                const candleSeries = this.chart.addSeries(LightweightCharts.CandlestickSeries, {
                     upColor: '#34d399',
                     downColor: '#f87171',
                     borderDownColor: '#f87171',
