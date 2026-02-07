@@ -171,7 +171,7 @@ class MarketDataFetcher:
             'source': 'eodhd'
         }
         
-        api_key_path = os.path.join('/Users/dq/.openclaw/workspace/.config/api_keys/eodhd')
+        api_key_path = os.path.join('./.config/api_keys/eodhd')
         try:
             with open(api_key_path) as f:
                 api_key = f.read().strip()
