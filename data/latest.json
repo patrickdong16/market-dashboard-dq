@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-02-10T12:37:00.289647",
+  "updated_at": "2026-02-10T14:07:55.386474",
   "assets": {
     "XAUUSD": {
-      "price": 5045.79,
-      "change_pct": -0.1894,
+      "price": 5056.7475,
+      "change_pct": 0.0273,
       "prev_close": 5055.365,
       "name": "黄金",
-      "updated": "2026-02-10T12:37:00.369512",
+      "updated": "2026-02-10T14:07:55.566178",
       "unit": "USD/oz",
       "icon": "🥇",
       "category": "metals"
@@ -14,14 +14,14 @@
     "GLD.US": {
       "error": true,
       "name": "黄金ETF",
-      "updated": "2026-02-10T12:37:00.974520"
+      "updated": "2026-02-10T14:07:55.910553"
     },
     "XAGUSD": {
-      "price": 82.1192,
-      "change_pct": -0.4863,
+      "price": 82.0173,
+      "change_pct": -0.6098,
       "prev_close": 82.52053,
       "name": "白银",
-      "updated": "2026-02-10T12:37:00.974581",
+      "updated": "2026-02-10T14:07:55.910601",
       "unit": "USD/oz",
       "icon": "🥈",
       "category": "metals"
@@ -29,34 +29,34 @@
     "SLV.US": {
       "error": true,
       "name": "白银ETF",
-      "updated": "2026-02-10T12:37:01.118619"
+      "updated": "2026-02-10T14:07:56.078151"
     },
     "HG=F": {
-      "price": 5.917500019073486,
-      "change_pct": -0.4625761445555264,
+      "price": 5.918000221252441,
+      "change_pct": -0.45416231504313315,
       "prev_close": 5.945000171661377,
       "name": "铜",
-      "updated": "2026-02-10T12:37:01.259369",
+      "updated": "2026-02-10T14:07:56.239265",
       "unit": "USD/吨",
       "icon": "🔶",
       "category": "metals"
     },
     "NICK.L": {
-      "price": 15.175000190734863,
-      "change_pct": -0.6221366351073548,
+      "price": 15.100000381469727,
+      "change_pct": -1.1132945068610838,
       "prev_close": 15.270000457763672,
       "name": "镍",
-      "updated": "2026-02-10T12:37:01.407451",
+      "updated": "2026-02-10T14:07:56.391329",
       "unit": "USD (ETC)",
       "icon": "⚙️",
       "category": "metals"
     },
     "CL=F": {
-      "price": 64.43000030517578,
-      "change_pct": 0.10876273175945263,
+      "price": 64.55000305175781,
+      "change_pct": 0.2952182094536685,
       "prev_close": 64.36000061035156,
       "name": "WTI原油",
-      "updated": "2026-02-10T12:37:01.548584",
+      "updated": "2026-02-10T14:07:56.493798",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
@@ -64,27 +64,27 @@
     "BTC-USD.CC": {
       "error": true,
       "name": "BTC",
-      "updated": "2026-02-10T12:37:01.548908"
+      "updated": "2026-02-10T14:07:56.494096"
     },
     "ETH-USD.CC": {
       "error": true,
       "name": "ETH",
-      "updated": "2026-02-10T12:37:01.548997"
+      "updated": "2026-02-10T14:07:56.494160"
     },
     "USDCNY.FOREX": {
       "error": true,
       "name": "USD/CNY",
-      "updated": "2026-02-10T12:37:01.549078"
+      "updated": "2026-02-10T14:07:56.494233"
     },
     "USDJPY.FOREX": {
       "error": true,
       "name": "USD/JPY",
-      "updated": "2026-02-10T12:37:01.549160"
+      "updated": "2026-02-10T14:07:56.494280"
     },
     "EURUSD.FOREX": {
       "error": true,
       "name": "USD/EUR",
-      "updated": "2026-02-10T12:37:01.549239"
+      "updated": "2026-02-10T14:07:56.494332"
     }
   },
   "meta": {
