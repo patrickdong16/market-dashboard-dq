@@ -1,32 +1,32 @@
 {
-  "updated_at": "2026-03-15T23:24:48.084959",
+  "updated_at": "2026-03-15T23:52:01.714688",
   "assets": {
     "XAUUSD": {
       "error": true,
       "name": "黄金",
-      "updated": "2026-03-15T23:24:50.682115"
+      "updated": "2026-03-15T23:52:04.272620"
     },
     "GLD.US": {
       "error": true,
       "name": "黄金ETF",
-      "updated": "2026-03-15T23:24:50.682535"
+      "updated": "2026-03-15T23:52:04.273035"
     },
     "XAGUSD": {
       "error": true,
       "name": "白银",
-      "updated": "2026-03-15T23:24:52.911154"
+      "updated": "2026-03-15T23:52:06.645095"
     },
     "SLV.US": {
       "error": true,
       "name": "白银ETF",
-      "updated": "2026-03-15T23:24:52.911484"
+      "updated": "2026-03-15T23:52:06.645286"
     },
     "HG=F": {
-      "price": 5.692999839782715,
-      "change_pct": -0.3762378303053819,
+      "price": 5.689499855041504,
+      "change_pct": -0.43748526702922813,
       "prev_close": 5.7144999504089355,
       "name": "铜",
-      "updated": "2026-03-15T23:24:53.240749",
+      "updated": "2026-03-15T23:52:07.400092",
       "unit": "USD/吨",
       "icon": "🔶",
       "category": "metals"
@@ -36,17 +36,17 @@
       "change_pct": -2.633690986979857,
       "prev_close": 15.567500114440918,
       "name": "镍",
-      "updated": "2026-03-15T23:24:53.323507",
+      "updated": "2026-03-15T23:52:07.602111",
       "unit": "USD (ETC)",
       "icon": "⚙️",
       "category": "metals"
     },
     "CL=F": {
-      "price": 99.86000061035156,
-      "change_pct": 1.1650304290802131,
+      "price": 99.80999755859375,
+      "change_pct": 1.1143739077332504,
       "prev_close": 98.70999908447266,
       "name": "WTI原油",
-      "updated": "2026-03-15T23:24:53.431581",
+      "updated": "2026-03-15T23:52:07.878789",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
@@ -54,27 +54,27 @@
     "BTC-USD.CC": {
       "error": true,
       "name": "BTC",
-      "updated": "2026-03-15T23:24:53.431895"
+      "updated": "2026-03-15T23:52:07.879069"
     },
     "ETH-USD.CC": {
       "error": true,
       "name": "ETH",
-      "updated": "2026-03-15T23:24:53.432015"
+      "updated": "2026-03-15T23:52:07.879112"
     },
     "USDCNY.FOREX": {
       "error": true,
       "name": "USD/CNY",
-      "updated": "2026-03-15T23:24:53.432129"
+      "updated": "2026-03-15T23:52:07.879166"
     },
     "USDJPY.FOREX": {
       "error": true,
       "name": "USD/JPY",
-      "updated": "2026-03-15T23:24:53.432267"
+      "updated": "2026-03-15T23:52:07.879224"
     },
     "EURUSD.FOREX": {
       "error": true,
       "name": "USD/EUR",
-      "updated": "2026-03-15T23:24:53.432376"
+      "updated": "2026-03-15T23:52:07.879302"
     }
   },
   "meta": {
