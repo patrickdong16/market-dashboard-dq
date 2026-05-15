@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import traceback
+from datetime import datetime, timedelta
 
 
 EODHD_API_KEY = os.environ.get('EODHD_API_KEY', '')
@@ -90,6 +91,47 @@ def fetch_eodhd_realtime(symbol):
         'prev_close': prev_close,
         'sparkline': [],
         'source': 'eodhd'
+    }
+
+
+def fetch_eodhd_eod_latest(symbol):
+    """Fetch the latest daily close from EODHD EOD API.
+
+    Some index/yield symbols (for example US10Y.INDX and US30Y.INDX)
+    do not expose a usable real-time close via EODHD, but their daily EOD
+    endpoint is reliable. Return the latest close and day-over-day change.
+    """
+    from_date = (datetime.utcnow() - timedelta(days=20)).strftime('%Y-%m-%d')
+    url = (
+        f"https://eodhd.com/api/eod/{urllib.parse.quote(symbol, safe='')}"
+        f"?api_token={EODHD_API_KEY}&fmt=json&from={from_date}"
+    )
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'MarketDashboard/1.0'
+    })
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        raw = json.loads(resp.read())
+
+    if not raw or not isinstance(raw, list):
+        return None
+
+    bars = [bar for bar in raw if bar.get('close') not in (None, 'NA', 0)]
+    if not bars:
+        return None
+
+    latest = bars[-1]
+    prev = bars[-2] if len(bars) >= 2 else None
+    close_price = float(latest['close'])
+    prev_close = float(prev['close']) if prev else close_price
+    change_pct = ((close_price - prev_close) / prev_close * 100) if prev_close else 0
+    sparkline = [float(bar['close']) for bar in bars]
+
+    return {
+        'price': close_price,
+        'change_pct': round(change_pct, 4),
+        'prev_close': prev_close,
+        'sparkline': sparkline,
+        'source': 'eodhd_eod'
     }
 
 
@@ -193,8 +235,18 @@ class handler(BaseHTTPRequestHandler):
                     except Exception as e:
                         errors.append(f"{sym}: goldprice parse error: {str(e)}")
 
+                # Try EODHD daily close for symbols without reliable real-time quotes
+                if source == 'eodhd_eod' and EODHD_API_KEY:
+                    try:
+                        data = fetch_eodhd_eod_latest(sym)
+                        if data:
+                            result[sym] = data
+                            continue
+                    except Exception as e:
+                        errors.append(f"{sym}: EODHD EOD error: {str(e)}")
+
                 # Try EODHD
-                if EODHD_API_KEY:
+                if source != 'eodhd_eod' and EODHD_API_KEY:
                     try:
                         data = fetch_eodhd_realtime(sym)
                         if data:

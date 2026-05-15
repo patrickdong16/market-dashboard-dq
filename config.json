@@ -130,6 +130,30 @@
           "invert": true
         }
       ]
+    },
+    {
+      "name": "利率",
+      "id": "rates",
+      "assets": [
+        {
+          "name": "美国10年期国债收益率",
+          "symbol": "US10Y.INDX",
+          "display_symbol": "US10Y",
+          "yahoo_symbol": "^TNX",
+          "source": "eodhd_eod",
+          "unit": "%",
+          "icon": "🏛️"
+        },
+        {
+          "name": "美国30年期国债收益率",
+          "symbol": "US30Y.INDX",
+          "display_symbol": "US30Y",
+          "yahoo_symbol": "^TYX",
+          "source": "eodhd_eod",
+          "unit": "%",
+          "icon": "🏛️"
+        }
+      ]
     }
   ],
   "refresh_interval_seconds": 30,

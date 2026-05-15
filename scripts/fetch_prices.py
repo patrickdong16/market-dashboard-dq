@@ -25,6 +25,28 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+def load_eodhd_api_key() -> Optional[str]:
+    """Load EODHD API key from env first, then local OpenClaw/workspace files."""
+    env_key = os.environ.get('EODHD_API_KEY', '').strip()
+    if env_key:
+        return env_key
+
+    candidate_paths = [
+        './.config/api_keys/eodhd',
+        '/Users/dq/.openclaw/workspace/.config/api_keys/eodhd',
+    ]
+    for api_key_path in candidate_paths:
+        try:
+            with open(api_key_path) as f:
+                key = f.read().strip()
+                if key:
+                    return key
+        except Exception:
+            continue
+    return None
+
+
 class MarketDataFetcher:
     def __init__(self, config_path: str = "config.json"):
         self.config_path = config_path
@@ -171,11 +193,8 @@ class MarketDataFetcher:
             'source': 'eodhd'
         }
         
-        api_key_path = os.path.join('./.config/api_keys/eodhd')
-        try:
-            with open(api_key_path) as f:
-                api_key = f.read().strip()
-        except:
+        api_key = load_eodhd_api_key()
+        if not api_key:
             result['error'] = "EODHD API key not found"
             logger.error(result['error'])
             return result
@@ -227,6 +246,65 @@ class MarketDataFetcher:
         fallback_sym = yahoo_symbol or symbol
         logger.info(f"Falling back to Yahoo for {name} ({fallback_sym})")
         return self.get_yahoo_data(fallback_sym, name)
+
+    def get_eodhd_eod_data(self, symbol: str, name: str) -> Dict[str, Any]:
+        """获取 EODHD EOD 最新日线数据（用于美债收益率等实时接口不可用的指标）"""
+        result = {
+            'symbol': symbol,
+            'name': name,
+            'price': None,
+            'change_percent_24h': None,
+            'prev_close': None,
+            'history': [],
+            'error': None,
+            'source': 'eodhd_eod'
+        }
+
+        api_key = load_eodhd_api_key()
+        if not api_key:
+            result['error'] = "EODHD API key not found"
+            logger.error(result['error'])
+            return result
+
+        for retry in range(self.max_retries):
+            try:
+                from_date = (datetime.utcnow() - timedelta(days=20)).strftime('%Y-%m-%d')
+                url = f"https://eodhd.com/api/eod/{symbol}?api_token={api_key}&fmt=json&from={from_date}"
+                resp = requests.get(url, timeout=self.timeout, headers={'User-Agent': 'MarketDashboard/1.0'})
+                resp.raise_for_status()
+                raw = resp.json()
+
+                bars = [bar for bar in raw if bar.get('close') not in (None, 'NA', 0)]
+                if not bars:
+                    result['error'] = f"EODHD EOD returned no usable bars for {symbol}"
+                    logger.warning(result['error'])
+                    return result
+
+                latest = bars[-1]
+                prev = bars[-2] if len(bars) >= 2 else None
+                close_price = float(latest['close'])
+                prev_close = float(prev['close']) if prev else close_price
+                change_percent = ((close_price - prev_close) / prev_close * 100) if prev_close else 0
+
+                result.update({
+                    'price': close_price,
+                    'change_percent_24h': change_percent,
+                    'prev_close': prev_close,
+                    'history': [float(bar['close']) for bar in bars],
+                    'last_updated': datetime.now().isoformat()
+                })
+
+                logger.info(f"✓ {name} ({symbol}): {close_price:.4f}% ({change_percent:+.2f}%) [eodhd_eod]")
+                return result
+
+            except Exception as e:
+                logger.warning(f"EODHD EOD attempt {retry + 1} failed for {symbol}: {e}")
+                if retry < self.max_retries - 1:
+                    time.sleep(1)
+
+        result['error'] = f"Failed to fetch EODHD EOD data for {name} after {self.max_retries} retries"
+        logger.error(result['error'])
+        return result
 
     def get_goldprice_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
         """获取 GoldPrice.org 贵金属现货数据（XAU/XAG）"""
@@ -337,6 +415,8 @@ class MarketDataFetcher:
                     data = self.get_goldprice_data(symbol, asset['name'], asset.get('yahoo_symbol'))
                 elif asset['source'] == 'eodhd':
                     data = self.get_eodhd_data(symbol, asset['name'], asset.get('yahoo_symbol'))
+                elif asset['source'] == 'eodhd_eod':
+                    data = self.get_eodhd_eod_data(symbol, asset['name'])
                 elif asset['source'] == 'yahoo':
                     data = self.get_yahoo_data(symbol, asset['name'])
                 elif asset['source'] == 'binance':
@@ -451,6 +531,10 @@ def test_single_asset(symbol: str):
     try:
         if asset_config['source'] == 'goldprice':
             data = fetcher.get_goldprice_data(symbol, asset_config['name'], asset_config.get('yahoo_symbol'))
+        elif asset_config['source'] == 'eodhd':
+            data = fetcher.get_eodhd_data(symbol, asset_config['name'], asset_config.get('yahoo_symbol'))
+        elif asset_config['source'] == 'eodhd_eod':
+            data = fetcher.get_eodhd_eod_data(symbol, asset_config['name'])
         elif asset_config['source'] == 'yahoo':
             data = fetcher.get_yahoo_data(symbol, asset_config['name'])
         elif asset_config['source'] == 'binance':

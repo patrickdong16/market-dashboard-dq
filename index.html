@@ -666,6 +666,10 @@
                 if (!price || price === 0) return 'N/A';
                 
                 let finalPrice = price;
+
+                if (asset && asset.unit === '%') {
+                    return `${finalPrice.toFixed(3)}%`;
+                }
                 
                 if (finalPrice >= 1000) {
                     return `$${finalPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
