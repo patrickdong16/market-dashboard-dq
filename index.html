@@ -466,7 +466,8 @@
             }
 
             async loadConfig() {
-                const response = await fetch('./config.json');
+                // Always revalidate config so newly-added assets/categories appear after refresh.
+                const response = await fetch(`./config.json?v=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error('Failed to load config');
                 this.config = await response.json();
             }
@@ -545,6 +546,7 @@
                         textEl.textContent = '刷新中...';
 
                         try {
+                            await this.loadConfig();
                             await this.loadData();
                             this.renderList();
                             textEl.textContent = '已更新';
