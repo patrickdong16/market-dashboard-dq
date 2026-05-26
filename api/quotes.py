@@ -58,6 +58,54 @@ def parse_goldprice_symbol(data, symbol):
     }
 
 
+
+# ─── HKMA HIBOR helpers ─────────────────────────────────────────
+
+def fetch_hkma_hibor_latest(symbol):
+    """Fetch latest HKMA HIBOR fixing from the official HKMA public API.
+
+    Supported synthetic symbols map to HKMA fields, e.g. HIBOR1M -> ir_1m.
+    Returns rates in percent per annum.
+    """
+    tenor_map = {
+        'HIBORON': 'ir_overnight',
+        'HIBOR1W': 'ir_1w',
+        'HIBOR1M': 'ir_1m',
+        'HIBOR3M': 'ir_3m',
+        'HIBOR6M': 'ir_6m',
+        'HIBOR12M': 'ir_12m',
+    }
+    tenor = tenor_map.get(symbol, 'ir_1m')
+    url = (
+        'https://api.hkma.gov.hk/public/market-data-and-statistics/'
+        'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
+        '?segment=hibor.fixing&offset=0'
+    )
+    req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        raw = json.loads(resp.read())
+
+    records = raw.get('result', {}).get('records', [])
+    records = [r for r in records if r.get(tenor) not in (None, 'NA')]
+    if not records:
+        return None
+
+    records = sorted(records, key=lambda r: r.get('end_of_day', ''))
+    latest = records[-1]
+    prev = records[-2] if len(records) >= 2 else None
+    price = float(latest[tenor])
+    prev_close = float(prev[tenor]) if prev else price
+    change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
+
+    return {
+        'price': price,
+        'change_pct': round(change_pct, 4),
+        'prev_close': prev_close,
+        'sparkline': [float(r[tenor]) for r in records[-7:]],
+        'source': 'hkma_hibor',
+        'as_of_date': latest.get('end_of_day')
+    }
+
 # ─── EODHD / Yahoo helpers ──────────────────────────────────────
 
 
@@ -234,6 +282,16 @@ class handler(BaseHTTPRequestHandler):
                             continue
                     except Exception as e:
                         errors.append(f"{sym}: goldprice parse error: {str(e)}")
+
+                # Try HKMA HIBOR for Hong Kong interbank offered rates
+                if source == 'hkma_hibor':
+                    try:
+                        data = fetch_hkma_hibor_latest(sym)
+                        if data:
+                            result[sym] = data
+                            continue
+                    except Exception as e:
+                        errors.append(f"{sym}: HKMA HIBOR error: {str(e)}")
 
                 # Try EODHD daily close for symbols without reliable real-time quotes
                 if source == 'eodhd_eod' and EODHD_API_KEY:

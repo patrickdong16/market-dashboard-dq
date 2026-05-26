@@ -33,6 +33,21 @@ curl "http://localhost:3000/api/chart?symbol=GC=F&range=1y&interval=1d"
 - Yahoo API 超时 → 返回 `{"error": "timeout"}`, status 504
 - 缺少参数 → 返回 `{"error": "missing symbols"}`, status 400
 
+### HIBOR API 验证
+```bash
+python3 scripts/fetch_prices.py --test HIBOR1M
+python3 - <<'PY'
+from api.quotes import fetch_hkma_hibor_latest
+from api.chart import fetch_hkma_hibor_chart
+print(fetch_hkma_hibor_latest('HIBOR1M'))
+print(len(fetch_hkma_hibor_chart('HIBOR1M', '3mo')))
+PY
+```
+# 验证：
+# - price 为 HKMA ir_1m 年化百分比
+# - change_pct 基于最近两个有效 fixing 计算
+# - chart 返回 date-format OHLC rows
+
 ### 铜价转换验证
 ```bash
 # 获取 HG=F 原始价格
@@ -51,6 +66,7 @@ curl "https://market-dashboard-api.vercel.app/api/quotes?symbols=HG=F"
 - [ ] Sparkline 绘制
 - [ ] 30 秒自动刷新（观察价格变化）
 - [ ] 铜显示 USD/吨（转换后数值合理）
+- [ ] 香港1个月HIBOR 显示在“利率”分组，单位为 %，详情页可显示历史曲线
 
 ### 详情视图
 - [ ] 点击品种行 → 进入详情

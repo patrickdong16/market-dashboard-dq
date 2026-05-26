@@ -152,6 +152,15 @@
           "source": "eodhd_eod",
           "unit": "%",
           "icon": "🏛️"
+        },
+        {
+          "name": "香港1个月HIBOR",
+          "symbol": "HIBOR1M",
+          "display_symbol": "HIBOR 1M",
+          "source": "hkma_hibor",
+          "tenor": "ir_1m",
+          "unit": "%",
+          "icon": "🇭🇰"
         }
       ]
     }

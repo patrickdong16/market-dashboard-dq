@@ -126,6 +126,62 @@ def range_to_from_date(range_val):
     return (now - delta).strftime('%Y-%m-%d')
 
 
+
+# ─── HKMA HIBOR helpers ─────────────────────────────────────────
+
+def fetch_hkma_hibor_chart(symbol, range_val):
+    """Fetch HKMA HIBOR fixing history as daily OHLC rows.
+
+    HIBOR is a rate fixing, not a traded instrument, so OHLC are all set to the
+    same daily fixing value. The frontend can still render it as a time series.
+    """
+    tenor_map = {
+        'HIBORON': 'ir_overnight',
+        'HIBOR1W': 'ir_1w',
+        'HIBOR1M': 'ir_1m',
+        'HIBOR3M': 'ir_3m',
+        'HIBOR6M': 'ir_6m',
+        'HIBOR12M': 'ir_12m',
+    }
+    tenor = tenor_map.get(symbol, 'ir_1m')
+    url = (
+        'https://api.hkma.gov.hk/public/market-data-and-statistics/'
+        'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
+        '?segment=hibor.fixing&offset=0'
+    )
+    req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        raw = json.loads(resp.read())
+
+    records = raw.get('result', {}).get('records', [])
+    records = [r for r in records if r.get(tenor) not in (None, 'NA') and r.get('end_of_day')]
+    if not records:
+        return []
+
+    records = sorted(records, key=lambda r: r['end_of_day'])
+    range_limits = {
+        '5d': 5,
+        '1w': 7,
+        '1mo': 23,
+        '1m': 23,
+        '3mo': 66,
+        '6mo': 132,
+        '1y': 252,
+    }
+    limit = range_limits.get(range_val, 66)
+    rows = []
+    for r in records[-limit:]:
+        close = float(r[tenor])
+        rows.append({
+            'time': r['end_of_day'],
+            'open': close,
+            'high': close,
+            'low': close,
+            'close': close,
+            'volume': 0
+        })
+    return rows
+
 # ─── Yahoo fallback ──────────────────────────────────────────────
 
 def fetch_yahoo_chart(symbol, range_val, interval):
@@ -214,8 +270,16 @@ class handler(BaseHTTPRequestHandler):
             ohlcv = []
             source_used = 'none'
 
+            # ── HKMA HIBOR synthetic symbols ──
+            if symbol.startswith('HIBOR'):
+                try:
+                    ohlcv = fetch_hkma_hibor_chart(symbol, range_val)
+                    source_used = 'hkma_hibor'
+                except Exception:
+                    ohlcv = []
+
             # ── Try EODHD first ──
-            if EODHD_API_KEY:
+            if not ohlcv and EODHD_API_KEY:
                 try:
                     if interval == '5m':
                         ohlcv = fetch_eodhd_intraday(symbol)

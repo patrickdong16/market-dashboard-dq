@@ -306,6 +306,73 @@ class MarketDataFetcher:
         logger.error(result['error'])
         return result
 
+
+    def get_hkma_hibor_data(self, symbol: str, name: str, tenor: str = 'ir_1m') -> Dict[str, Any]:
+        """获取 HKMA HIBOR fixing daily data.
+
+        HKMA endpoint returns the newest records first. Values are percent per annum.
+        Default tenor is 1-month HIBOR, which is the most commonly watched HKD funding
+        benchmark for mortgages and liquidity monitoring.
+        """
+        result = {
+            'symbol': symbol,
+            'name': name,
+            'price': None,
+            'change_percent_24h': None,
+            'prev_close': None,
+            'history': [],
+            'error': None,
+            'source': 'hkma_hibor'
+        }
+
+        url = (
+            'https://api.hkma.gov.hk/public/market-data-and-statistics/'
+            'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
+            '?segment=hibor.fixing&offset=0'
+        )
+
+        for retry in range(self.max_retries):
+            try:
+                resp = requests.get(url, timeout=self.timeout, headers={'User-Agent': 'MarketDashboard/1.0'})
+                resp.raise_for_status()
+                raw = resp.json()
+                records = raw.get('result', {}).get('records', [])
+                records = [r for r in records if r.get(tenor) not in (None, 'NA')]
+
+                if len(records) < 1:
+                    result['error'] = f"HKMA returned no usable HIBOR records for tenor {tenor}"
+                    logger.warning(result['error'])
+                    return result
+
+                # API returns newest first. Sort ascending for history/sparkline.
+                records = sorted(records, key=lambda r: r.get('end_of_day', ''))
+                latest = records[-1]
+                prev = records[-2] if len(records) >= 2 else None
+                latest_rate = float(latest[tenor])
+                prev_rate = float(prev[tenor]) if prev else latest_rate
+                change_percent = ((latest_rate - prev_rate) / prev_rate * 100) if prev_rate else 0
+
+                result.update({
+                    'price': latest_rate,
+                    'change_percent_24h': change_percent,
+                    'prev_close': prev_rate,
+                    'history': [float(r[tenor]) for r in records[-7:]],
+                    'last_updated': datetime.now().isoformat(),
+                    'as_of_date': latest.get('end_of_day')
+                })
+
+                logger.info(f"✓ {name} ({symbol}): {latest_rate:.5f}% ({change_percent:+.2f}%) [hkma_hibor {latest.get('end_of_day')}]")
+                return result
+
+            except Exception as e:
+                logger.warning(f"HKMA HIBOR attempt {retry + 1} failed for {symbol}: {e}")
+                if retry < self.max_retries - 1:
+                    time.sleep(1)
+
+        result['error'] = f"Failed to fetch HKMA HIBOR data for {name} after {self.max_retries} retries"
+        logger.error(result['error'])
+        return result
+
     def get_goldprice_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
         """获取 GoldPrice.org 贵金属现货数据（XAU/XAG）"""
         result = {
@@ -417,6 +484,8 @@ class MarketDataFetcher:
                     data = self.get_eodhd_data(symbol, asset['name'], asset.get('yahoo_symbol'))
                 elif asset['source'] == 'eodhd_eod':
                     data = self.get_eodhd_eod_data(symbol, asset['name'])
+                elif asset['source'] == 'hkma_hibor':
+                    data = self.get_hkma_hibor_data(symbol, asset['name'], asset.get('tenor', 'ir_1m'))
                 elif asset['source'] == 'yahoo':
                     data = self.get_yahoo_data(symbol, asset['name'])
                 elif asset['source'] == 'binance':
@@ -535,6 +604,8 @@ def test_single_asset(symbol: str):
             data = fetcher.get_eodhd_data(symbol, asset_config['name'], asset_config.get('yahoo_symbol'))
         elif asset_config['source'] == 'eodhd_eod':
             data = fetcher.get_eodhd_eod_data(symbol, asset_config['name'])
+        elif asset_config['source'] == 'hkma_hibor':
+            data = fetcher.get_hkma_hibor_data(symbol, asset_config['name'], asset_config.get('tenor', 'ir_1m'))
         elif asset_config['source'] == 'yahoo':
             data = fetcher.get_yahoo_data(symbol, asset_config['name'])
         elif asset_config['source'] == 'binance':
