@@ -31,7 +31,7 @@
 
 #### `api/quotes.py`
 - **GET** `/api/quotes?symbols=GC=F,SI=F,HG=F,CNY=X,...`
-- 代理多数据源 quote API：GoldPrice / EODHD / HKMA HIBOR / Yahoo fallback
+- 代理多数据源 quote API：GoldPrice / EODHD / HKMA HIBOR（HKAB fallback）/ Yahoo fallback
 - 返回：每个 symbol 的 price, change_pct, prev_close
 - CORS headers: `Access-Control-Allow-Origin: *`
 - 超时 10 秒
@@ -40,7 +40,7 @@
 - **GET** `/api/chart?symbol=GC=F&range=3mo&interval=1d`
 - 代理 Yahoo Finance chart API
 - 返回：OHLCV 数据（给 K 线图用）
-- HIBOR 是利率 fixing，不是交易品种；chart API 将同一日 fixing 填充为 OHLC 四价，用于渲染时间序列
+- HIBOR 是利率 fixing，不是交易品种；chart API 将同一日 fixing 填充为 OHLC 四价，用于渲染时间序列；当 HKMA API 不可用或返回陈旧数据时，使用 HKAB 最新 fixing 作为单点 chart fallback，避免详情页失败
 - range 支持: 5d, 1mo, 3mo, 1y
 - interval 支持: 1d
 

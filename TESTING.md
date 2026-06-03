@@ -44,9 +44,10 @@ print(len(fetch_hkma_hibor_chart('HIBOR1M', '3mo')))
 PY
 ```
 # 验证：
-# - price 为 HKMA ir_1m 年化百分比
-# - change_pct 基于最近两个有效 fixing 计算
-# - chart 返回 date-format OHLC rows
+# - 正常情况下 price 为 HKMA ir_1m 年化百分比
+# - 当 HKMA 超时/502/返回陈旧数据时，fallback 到 HKAB 官方最新 fixing
+# - fallback 情况下 source=hkab_hibor、as_of_date 应为当前/最近香港工作日
+# - chart 返回 date-format OHLC rows；HKAB fallback 至少返回最新 fixing 单点，不应 502/404
 
 ### 铜价转换验证
 ```bash

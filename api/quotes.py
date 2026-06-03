@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import traceback
+import re
 from datetime import datetime, timedelta
 
 
@@ -76,34 +77,98 @@ def fetch_hkma_hibor_latest(symbol):
         'HIBOR12M': 'ir_12m',
     }
     tenor = tenor_map.get(symbol, 'ir_1m')
+    hkab_maturity_map = {
+        'HIBORON': 'Overnight',
+        'HIBOR1W': '1 Week',
+        'HIBOR1M': '1 Month',
+        'HIBOR3M': '3 Months',
+        'HIBOR6M': '6 Months',
+        'HIBOR12M': '12 Months',
+    }
     url = (
         'https://api.hkma.gov.hk/public/market-data-and-statistics/'
         'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
         '?segment=hibor.fixing&offset=0'
     )
-    req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
-    with urllib.request.urlopen(req, timeout=8) as resp:
-        raw = json.loads(resp.read())
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            raw = json.loads(resp.read())
 
-    records = raw.get('result', {}).get('records', [])
-    records = [r for r in records if r.get(tenor) not in (None, 'NA')]
-    if not records:
-        return None
+        records = raw.get('result', {}).get('records', [])
+        records = [r for r in records if r.get(tenor) not in (None, 'NA')]
+        if records:
+            records = sorted(records, key=lambda r: r.get('end_of_day', ''))
+            latest = records[-1]
 
-    records = sorted(records, key=lambda r: r.get('end_of_day', ''))
-    latest = records[-1]
-    prev = records[-2] if len(records) >= 2 else None
-    price = float(latest[tenor])
-    prev_close = float(prev[tenor]) if prev else price
-    change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
+            # HKMA has occasionally returned a stale page or timed out from Vercel.
+            # Prefer the official HKAB fixing page when HKMA is unavailable/stale.
+            latest_date = datetime.strptime(latest.get('end_of_day'), '%Y-%m-%d').date()
+            if (datetime.utcnow().date() - latest_date).days <= 7:
+                prev = records[-2] if len(records) >= 2 else None
+                price = float(latest[tenor])
+                prev_close = float(prev[tenor]) if prev else price
+                change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
 
+                return {
+                    'price': price,
+                    'change_pct': round(change_pct, 4),
+                    'prev_close': prev_close,
+                    'sparkline': [float(r[tenor]) for r in records[-7:]],
+                    'source': 'hkma_hibor',
+                    'as_of_date': latest.get('end_of_day')
+                }
+    except Exception:
+        pass
+
+    return fetch_hkab_hibor_latest(symbol, hkab_maturity_map.get(symbol, '1 Month'))
+
+
+def fetch_hkab_hibor_latest(symbol, maturity):
+    """Fetch latest HIBOR fixing from HKAB's official public rates page.
+
+    HKAB is the fixing publisher. This is the production fallback when HKMA's
+    monthly-statistical-bulletin API times out, returns 502, or serves stale rows.
+    """
+    url = 'https://www.hkab.org.hk/en/rates/hibor'
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'Mozilla/5.0 MarketDashboard/1.0',
+        'Accept-Language': 'en-US,en;q=0.9',
+    })
+    last_error = None
+    html = None
+    for _ in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                html = resp.read().decode('utf-8', 'replace')
+            break
+        except Exception as exc:
+            last_error = exc
+    if html is None:
+        raise last_error
+
+    date_match = re.search(r'Rates as at 11:15a\.m\.<br/>Hong Kong Time on (\d{4})-(\d{1,2})-(\d{1,2})\.', html)
+    as_of_date = None
+    if date_match:
+        y, m, d = map(int, date_match.groups())
+        as_of_date = f'{y:04d}-{m:02d}-{d:02d}'
+
+    pattern = (
+        r'<div class="general_table_cell hibor_maturity"><div>' + re.escape(maturity) +
+        r'</div></div><div class="general_table_cell last"><div>([0-9.]+)</div></div>'
+    )
+    rate_match = re.search(pattern, html)
+    if not rate_match:
+        raise ValueError(f'HKAB HIBOR rate not found for {maturity}')
+
+    price = float(rate_match.group(1))
     return {
         'price': price,
-        'change_pct': round(change_pct, 4),
-        'prev_close': prev_close,
-        'sparkline': [float(r[tenor]) for r in records[-7:]],
-        'source': 'hkma_hibor',
-        'as_of_date': latest.get('end_of_day')
+        'change_pct': 0,
+        'prev_close': price,
+        'sparkline': [price],
+        'source': 'hkab_hibor',
+        'as_of_date': as_of_date
     }
 
 # ─── EODHD / Yahoo helpers ──────────────────────────────────────

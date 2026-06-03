@@ -19,6 +19,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import http.cookiejar
+import re
 from datetime import datetime, timedelta
 
 
@@ -144,43 +145,99 @@ def fetch_hkma_hibor_chart(symbol, range_val):
         'HIBOR12M': 'ir_12m',
     }
     tenor = tenor_map.get(symbol, 'ir_1m')
+    hkab_maturity_map = {
+        'HIBORON': 'Overnight',
+        'HIBOR1W': '1 Week',
+        'HIBOR1M': '1 Month',
+        'HIBOR3M': '3 Months',
+        'HIBOR6M': '6 Months',
+        'HIBOR12M': '12 Months',
+    }
     url = (
         'https://api.hkma.gov.hk/public/market-data-and-statistics/'
         'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
         '?segment=hibor.fixing&offset=0'
     )
-    req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        raw = json.loads(resp.read())
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'MarketDashboard/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            raw = json.loads(resp.read())
 
-    records = raw.get('result', {}).get('records', [])
-    records = [r for r in records if r.get(tenor) not in (None, 'NA') and r.get('end_of_day')]
-    if not records:
+        records = raw.get('result', {}).get('records', [])
+        records = [r for r in records if r.get(tenor) not in (None, 'NA') and r.get('end_of_day')]
+        if records:
+            records = sorted(records, key=lambda r: r['end_of_day'])
+            latest_date = datetime.strptime(records[-1]['end_of_day'], '%Y-%m-%d').date()
+            if (datetime.utcnow().date() - latest_date).days <= 7:
+                range_limits = {
+                    '5d': 5,
+                    '1w': 7,
+                    '1mo': 23,
+                    '1m': 23,
+                    '3mo': 66,
+                    '6mo': 132,
+                    '1y': 252,
+                }
+                limit = range_limits.get(range_val, 66)
+                rows = []
+                for r in records[-limit:]:
+                    close = float(r[tenor])
+                    rows.append({
+                        'time': r['end_of_day'],
+                        'open': close,
+                        'high': close,
+                        'low': close,
+                        'close': close,
+                        'volume': 0
+                    })
+                return rows
+    except Exception:
+        pass
+
+    return fetch_hkab_hibor_chart(symbol, hkab_maturity_map.get(symbol, '1 Month'))
+
+
+def fetch_hkab_hibor_chart(symbol, maturity):
+    """Return a single latest HIBOR fixing row from HKAB as chart fallback."""
+    url = 'https://www.hkab.org.hk/en/rates/hibor'
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'Mozilla/5.0 MarketDashboard/1.0',
+        'Accept-Language': 'en-US,en;q=0.9',
+    })
+    last_error = None
+    html = None
+    for _ in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                html = resp.read().decode('utf-8', 'replace')
+            break
+        except Exception as exc:
+            last_error = exc
+    if html is None:
+        raise last_error
+
+    date_match = re.search(r'Rates as at 11:15a\.m\.<br/>Hong Kong Time on (\d{4})-(\d{1,2})-(\d{1,2})\.', html)
+    as_of_date = datetime.utcnow().strftime('%Y-%m-%d')
+    if date_match:
+        y, m, d = map(int, date_match.groups())
+        as_of_date = f'{y:04d}-{m:02d}-{d:02d}'
+
+    pattern = (
+        r'<div class="general_table_cell hibor_maturity"><div>' + re.escape(maturity) +
+        r'</div></div><div class="general_table_cell last"><div>([0-9.]+)</div></div>'
+    )
+    rate_match = re.search(pattern, html)
+    if not rate_match:
         return []
-
-    records = sorted(records, key=lambda r: r['end_of_day'])
-    range_limits = {
-        '5d': 5,
-        '1w': 7,
-        '1mo': 23,
-        '1m': 23,
-        '3mo': 66,
-        '6mo': 132,
-        '1y': 252,
-    }
-    limit = range_limits.get(range_val, 66)
-    rows = []
-    for r in records[-limit:]:
-        close = float(r[tenor])
-        rows.append({
-            'time': r['end_of_day'],
-            'open': close,
-            'high': close,
-            'low': close,
-            'close': close,
-            'volume': 0
-        })
-    return rows
+    close = float(rate_match.group(1))
+    return [{
+        'time': as_of_date,
+        'open': close,
+        'high': close,
+        'low': close,
+        'close': close,
+        'volume': 0
+    }]
 
 # ─── Yahoo fallback ──────────────────────────────────────────────
 

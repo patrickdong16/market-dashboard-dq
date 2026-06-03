@@ -9,6 +9,7 @@ import json
 import time
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 
@@ -325,6 +326,15 @@ class MarketDataFetcher:
             'source': 'hkma_hibor'
         }
 
+        hkab_maturity_map = {
+            'ir_overnight': 'Overnight',
+            'ir_1w': '1 Week',
+            'ir_1m': '1 Month',
+            'ir_3m': '3 Months',
+            'ir_6m': '6 Months',
+            'ir_12m': '12 Months',
+        }
+
         url = (
             'https://api.hkma.gov.hk/public/market-data-and-statistics/'
             'monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily'
@@ -340,13 +350,15 @@ class MarketDataFetcher:
                 records = [r for r in records if r.get(tenor) not in (None, 'NA')]
 
                 if len(records) < 1:
-                    result['error'] = f"HKMA returned no usable HIBOR records for tenor {tenor}"
-                    logger.warning(result['error'])
-                    return result
+                    raise ValueError(f"HKMA returned no usable HIBOR records for tenor {tenor}")
 
-                # API returns newest first. Sort ascending for history/sparkline.
+                # Sort ascending for history/sparkline. If HKMA serves stale data,
+                # fall back to HKAB, the official fixing publisher.
                 records = sorted(records, key=lambda r: r.get('end_of_day', ''))
                 latest = records[-1]
+                latest_date = datetime.strptime(latest.get('end_of_day'), '%Y-%m-%d').date()
+                if (datetime.utcnow().date() - latest_date).days > 7:
+                    raise ValueError(f"HKMA returned stale HIBOR date {latest.get('end_of_day')}")
                 prev = records[-2] if len(records) >= 2 else None
                 latest_rate = float(latest[tenor])
                 prev_rate = float(prev[tenor]) if prev else latest_rate
@@ -369,9 +381,56 @@ class MarketDataFetcher:
                 if retry < self.max_retries - 1:
                     time.sleep(1)
 
-        result['error'] = f"Failed to fetch HKMA HIBOR data for {name} after {self.max_retries} retries"
-        logger.error(result['error'])
-        return result
+        logger.warning(f"Falling back to HKAB HIBOR page for {symbol}")
+        return self.get_hkab_hibor_data(symbol, name, hkab_maturity_map.get(tenor, '1 Month'))
+
+    def get_hkab_hibor_data(self, symbol: str, name: str, maturity: str = '1 Month') -> Dict[str, Any]:
+        """Fetch latest HIBOR fixing from HKAB's official rates page."""
+        result = {
+            'symbol': symbol,
+            'name': name,
+            'price': None,
+            'change_percent_24h': None,
+            'prev_close': None,
+            'history': [],
+            'error': None,
+            'source': 'hkab_hibor'
+        }
+        try:
+            resp = requests.get(
+                'https://www.hkab.org.hk/en/rates/hibor',
+                timeout=self.timeout,
+                headers={'User-Agent': 'Mozilla/5.0 MarketDashboard/1.0', 'Accept-Language': 'en-US,en;q=0.9'}
+            )
+            resp.raise_for_status()
+            html = resp.text
+            date_match = re.search(r'Rates as at 11:15a\.m\.<br/>Hong Kong Time on (\d{4})-(\d{1,2})-(\d{1,2})\.', html)
+            as_of_date = None
+            if date_match:
+                y, m, d = map(int, date_match.groups())
+                as_of_date = f'{y:04d}-{m:02d}-{d:02d}'
+            pattern = (
+                r'<div class="general_table_cell hibor_maturity"><div>' + re.escape(maturity) +
+                r'</div></div><div class="general_table_cell last"><div>([0-9.]+)</div></div>'
+            )
+            rate_match = re.search(pattern, html)
+            if not rate_match:
+                raise ValueError(f'HKAB HIBOR rate not found for {maturity}')
+            latest_rate = float(rate_match.group(1))
+            result.update({
+                'price': latest_rate,
+                'change_percent_24h': 0,
+                'prev_close': latest_rate,
+                'history': [latest_rate],
+                'last_updated': datetime.now().isoformat(),
+                'as_of_date': as_of_date
+            })
+            logger.info(f"✓ {name} ({symbol}): {latest_rate:.5f}% (+0.00%) [hkab_hibor {as_of_date}]")
+            return result
+        except Exception as e:
+            result['error'] = f"Failed to fetch HKAB HIBOR data for {name}: {e}"
+            logger.error(result['error'])
+            return result
 
     def get_goldprice_data(self, symbol: str, name: str, yahoo_symbol: str = None) -> Dict[str, Any]:
         """获取 GoldPrice.org 贵金属现货数据（XAU/XAG）"""
