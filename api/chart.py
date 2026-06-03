@@ -331,7 +331,7 @@ class handler(BaseHTTPRequestHandler):
             if symbol.startswith('HIBOR'):
                 try:
                     ohlcv = fetch_hkma_hibor_chart(symbol, range_val)
-                    source_used = 'hkma_hibor'
+                    source_used = 'hkma_hibor_or_hkab_fallback'
                 except Exception:
                     ohlcv = []
 
