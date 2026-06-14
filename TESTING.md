@@ -56,6 +56,17 @@ curl "https://market-dashboard-api.vercel.app/api/quotes?symbols=HG=F"
 # 手动计算：price * 2204.62 应该 ≈ 合理的铜价/吨（当前约 $9000-12000/吨）
 ```
 
+### 原油品种验证
+```bash
+python3 scripts/fetch_prices.py --test CL=F
+python3 scripts/fetch_prices.py --test BZ=F
+curl "https://market-dashboard-dq.vercel.app/api/quotes?symbols=CL%3DF,BZ%3DF&sources=yahoo,yahoo"
+```
+# 验证：
+# - WTI 原油和布伦特原油均返回 price/change_pct
+# - 布伦特原油显示在“大宗商品”分组，display_symbol 为 BRENT
+# - 详情页可用 `BZ=F` 获取日 K 线
+
 ## 2. 前端功能测试
 
 ### 列表视图
@@ -67,6 +78,7 @@ curl "https://market-dashboard-api.vercel.app/api/quotes?symbols=HG=F"
 - [ ] Sparkline 绘制
 - [ ] 30 秒自动刷新（观察价格变化）
 - [ ] 铜显示 USD/吨（转换后数值合理）
+- [ ] 大宗商品分组同时显示 WTI 原油和布伦特原油
 - [ ] 香港1个月HIBOR 显示在“利率”分组，单位为 %，详情页可显示历史曲线
 
 ### 详情视图

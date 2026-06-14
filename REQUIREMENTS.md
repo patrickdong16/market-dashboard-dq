@@ -22,7 +22,7 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 | 类别 | 品种 | 数据源 |
 |------|------|--------|
 | 贵金属 | 黄金、白银、铜（USD/吨）、镍、稀土ETF(REMX) | Yahoo Finance via Vercel |
-| 大宗商品 | WTI 原油 | Yahoo Finance via Vercel |
+| 大宗商品 | WTI 原油、布伦特原油 | Yahoo Finance via Vercel |
 | 数字货币 | BTC、ETH | Binance WebSocket |
 | 汇率 | USD/CNY、USD/JPY、EUR/USD | EODHD/Yahoo via Vercel |
 | 利率 | US10Y、US30Y、香港1个月HIBOR | EODHD EOD / HKMA HIBOR + HKAB fallback via Vercel |

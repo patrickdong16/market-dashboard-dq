@@ -70,6 +70,14 @@
           "source": "yahoo",
           "unit": "USD/桶",
           "icon": "🛢️"
+        },
+        {
+          "name": "布伦特原油",
+          "symbol": "BZ=F",
+          "display_symbol": "BRENT",
+          "source": "yahoo",
+          "unit": "USD/桶",
+          "icon": "🛢️"
         }
       ]
     },

@@ -95,11 +95,21 @@
       "unit": "%",
       "icon": "🇭🇰",
       "category": "rates"
+    },
+    "BZ=F": {
+      "price": 83.80999755859375,
+      "change_pct": -4.030693002011616,
+      "prev_close": 87.33000183105469,
+      "name": "布伦特原油",
+      "updated": "2026-06-15T07:22:29.687456",
+      "unit": "USD/桶",
+      "icon": "🛢️",
+      "category": "commodities"
     }
   },
   "meta": {
-    "total_assets": 15,
-    "successful_fetches": 4,
+    "total_assets": 16,
+    "successful_fetches": 5,
     "failed_fetches": 11
   }
 }

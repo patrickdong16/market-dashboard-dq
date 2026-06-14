@@ -71,7 +71,7 @@
 | 功能 | Symbol | 状态 |
 |------|--------|------|
 | US 股票/ETF | GLD, SLV, SPY | ✅ |
-| COMEX 期货 | GC=F, SI=F, CL=F, HG=F | ✅ |
+| COMEX/NYMEX 期货 | GC=F, SI=F, CL=F, BZ=F, HG=F | ✅ |
 | 伦敦 ETC | NICK.L | ✅ |
 | Forex | EURUSD=X, CNY=X | ✅ |
 | Crypto | BTC-USD, ETH-USD | ✅ |

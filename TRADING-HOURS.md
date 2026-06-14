@@ -11,7 +11,7 @@
 - **来源：** CME Group COMEX Division
 - **Yahoo symbol 特征：** `=F` 后缀
 
-### CME 能源期货 (CL=F WTI原油)
+### CME 能源期货 (CL=F WTI原油, BZ=F 布伦特原油)
 - **交易时段：** 周日 18:00 – 周五 17:00 ET
 - **每日维护中断：** 17:00 – 18:00 ET
 - **来源：** CME Group NYMEX Division

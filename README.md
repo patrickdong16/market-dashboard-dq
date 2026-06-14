@@ -28,6 +28,7 @@ A real-time market dashboard displaying precious metals, commodities, cryptocurr
 
 ### 🛢️ 大宗商品 (Commodities)
 - WTI原油 (WTI Crude Oil) - CL=F
+- 布伦特原油 (Brent Crude Oil) - BZ=F
 
 ### ₿ 数字货币 (Cryptocurrencies)
 - Bitcoin (BTC) - BTCUSDT

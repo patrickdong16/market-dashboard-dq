@@ -368,8 +368,10 @@ class handler(BaseHTTPRequestHandler):
                     except Exception as e:
                         errors.append(f"{sym}: EODHD EOD error: {str(e)}")
 
-                # Try EODHD
-                if source != 'eodhd_eod' and EODHD_API_KEY:
+                # Try EODHD only for EODHD-backed or unspecified sources.
+                # Yahoo-configured futures (CL=F/BZ=F/HG=F) should not pay an
+                # EODHD 422 round trip before using their intended source.
+                if source not in ('eodhd_eod', 'yahoo') and EODHD_API_KEY:
                     try:
                         data = fetch_eodhd_realtime(sym)
                         if data:
