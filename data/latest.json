@@ -1,62 +1,62 @@
 {
-  "updated_at": "2026-07-10T15:21:18.180116",
+  "updated_at": "2026-07-10T16:17:01.323975",
   "assets": {
     "XAUUSD": {
       "error": true,
       "name": "黄金",
-      "updated": "2026-07-10T15:21:20.469344"
+      "updated": "2026-07-10T16:17:03.789451"
     },
     "GLD.US": {
       "error": true,
       "name": "黄金ETF",
-      "updated": "2026-07-10T15:21:20.469742"
+      "updated": "2026-07-10T16:17:03.790045"
     },
     "XAGUSD": {
       "error": true,
       "name": "白银",
-      "updated": "2026-07-10T15:21:22.588374"
+      "updated": "2026-07-10T16:17:06.099421"
     },
     "SLV.US": {
       "error": true,
       "name": "白银ETF",
-      "updated": "2026-07-10T15:21:22.588547"
+      "updated": "2026-07-10T16:17:06.099960"
     },
     "HG=F": {
-      "price": 6.269000053405762,
-      "change_pct": 0.8688640304439227,
+      "price": 6.290500164031982,
+      "change_pct": 1.21480305053016,
       "prev_close": 6.215000152587891,
       "name": "铜",
-      "updated": "2026-07-10T15:21:22.792327",
+      "updated": "2026-07-10T16:17:06.413221",
       "unit": "USD/吨",
       "icon": "🔶",
       "category": "metals"
     },
     "NICK.L": {
-      "price": 14.569999694824219,
-      "change_pct": 1.0051958556124543,
+      "price": 14.574999809265137,
+      "change_pct": 1.0398586935660339,
       "prev_close": 14.425000190734863,
       "name": "镍",
-      "updated": "2026-07-10T15:21:22.897238",
+      "updated": "2026-07-10T16:17:06.566605",
       "unit": "USD (ETC)",
       "icon": "⚙️",
       "category": "metals"
     },
     "CL=F": {
-      "price": 71.4800033569336,
-      "change_pct": -0.8324062970023296,
+      "price": 71.2699966430664,
+      "change_pct": -1.1237585563424632,
       "prev_close": 72.08000183105469,
       "name": "WTI原油",
-      "updated": "2026-07-10T15:21:23.000264",
+      "updated": "2026-07-10T16:17:06.639522",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
     },
     "BZ=F": {
-      "price": 75.95999908447266,
-      "change_pct": -0.44561461819931497,
+      "price": 75.75,
+      "change_pct": -0.7208427650844523,
       "prev_close": 76.30000305175781,
       "name": "布伦特原油",
-      "updated": "2026-07-10T15:21:23.190037",
+      "updated": "2026-07-10T16:17:06.711120",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
@@ -64,52 +64,47 @@
     "BTC-USD.CC": {
       "error": true,
       "name": "BTC",
-      "updated": "2026-07-10T15:21:23.190392"
+      "updated": "2026-07-10T16:17:06.711461"
     },
     "ETH-USD.CC": {
       "error": true,
       "name": "ETH",
-      "updated": "2026-07-10T15:21:23.190496"
+      "updated": "2026-07-10T16:17:06.711567"
     },
     "USDCNY.FOREX": {
       "error": true,
       "name": "USD/CNY",
-      "updated": "2026-07-10T15:21:23.190593"
+      "updated": "2026-07-10T16:17:06.711663"
     },
     "USDJPY.FOREX": {
       "error": true,
       "name": "USD/JPY",
-      "updated": "2026-07-10T15:21:23.190690"
+      "updated": "2026-07-10T16:17:06.711786"
     },
     "EURUSD.FOREX": {
       "error": true,
       "name": "USD/EUR",
-      "updated": "2026-07-10T15:21:23.190810"
+      "updated": "2026-07-10T16:17:06.711880"
     },
     "US10Y.INDX": {
       "error": true,
       "name": "美国10年期国债收益率",
-      "updated": "2026-07-10T15:21:23.190924"
+      "updated": "2026-07-10T16:17:06.711980"
     },
     "US30Y.INDX": {
       "error": true,
       "name": "美国30年期国债收益率",
-      "updated": "2026-07-10T15:21:23.191008"
+      "updated": "2026-07-10T16:17:06.712071"
     },
     "HIBOR1M": {
-      "price": 2.66113,
-      "change_pct": 0,
-      "prev_close": 2.66113,
+      "error": true,
       "name": "香港1个月HIBOR",
-      "updated": "2026-07-10T15:21:30.197370",
-      "unit": "%",
-      "icon": "🇭🇰",
-      "category": "rates"
+      "updated": "2026-07-10T16:17:15.437292"
     }
   },
   "meta": {
     "total_assets": 16,
-    "successful_fetches": 5,
-    "failed_fetches": 11
+    "successful_fetches": 4,
+    "failed_fetches": 12
   }
 }
