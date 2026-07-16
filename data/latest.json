@@ -1,32 +1,32 @@
 {
-  "updated_at": "2026-07-16T20:07:00.295115",
+  "updated_at": "2026-07-16T20:32:33.617236",
   "assets": {
     "XAUUSD": {
       "error": true,
       "name": "黄金",
-      "updated": "2026-07-16T20:07:02.592274"
+      "updated": "2026-07-16T20:32:35.858835"
     },
     "GLD.US": {
       "error": true,
       "name": "黄金ETF",
-      "updated": "2026-07-16T20:07:02.592724"
+      "updated": "2026-07-16T20:32:35.859260"
     },
     "XAGUSD": {
       "error": true,
       "name": "白银",
-      "updated": "2026-07-16T20:07:04.725367"
+      "updated": "2026-07-16T20:32:38.058344"
     },
     "SLV.US": {
       "error": true,
       "name": "白银ETF",
-      "updated": "2026-07-16T20:07:04.725680"
+      "updated": "2026-07-16T20:32:38.058731"
     },
     "HG=F": {
-      "price": 6.291500091552734,
-      "change_pct": -0.031776516381574596,
+      "price": 6.290500164031982,
+      "change_pct": -0.04766477457236189,
       "prev_close": 6.293499946594238,
       "name": "铜",
-      "updated": "2026-07-16T20:07:05.024557",
+      "updated": "2026-07-16T20:32:38.360954",
       "unit": "USD/吨",
       "icon": "🔶",
       "category": "metals"
@@ -36,27 +36,27 @@
       "change_pct": 2.464913533961254,
       "prev_close": 14.604999542236328,
       "name": "镍",
-      "updated": "2026-07-16T20:07:05.117643",
+      "updated": "2026-07-16T20:32:38.498301",
       "unit": "USD (ETC)",
       "icon": "⚙️",
       "category": "metals"
     },
     "CL=F": {
-      "price": 78.43000030517578,
-      "change_pct": -1.469846974087183,
+      "price": 78.48999786376953,
+      "change_pct": -1.3944731553134853,
       "prev_close": 79.5999984741211,
       "name": "WTI原油",
-      "updated": "2026-07-16T20:07:05.230433",
+      "updated": "2026-07-16T20:32:38.591211",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
     },
     "BZ=F": {
-      "price": 84.33000183105469,
-      "change_pct": -0.7298353613423281,
+      "price": 84.43000030517578,
+      "change_pct": -0.6121208496137164,
       "prev_close": 84.94999694824219,
       "name": "布伦特原油",
-      "updated": "2026-07-16T20:07:05.353147",
+      "updated": "2026-07-16T20:32:38.677158",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
@@ -64,44 +64,44 @@
     "BTC-USD.CC": {
       "error": true,
       "name": "BTC",
-      "updated": "2026-07-16T20:07:05.353520"
+      "updated": "2026-07-16T20:32:38.677566"
     },
     "ETH-USD.CC": {
       "error": true,
       "name": "ETH",
-      "updated": "2026-07-16T20:07:05.353595"
+      "updated": "2026-07-16T20:32:38.677662"
     },
     "USDCNY.FOREX": {
       "error": true,
       "name": "USD/CNY",
-      "updated": "2026-07-16T20:07:05.353661"
+      "updated": "2026-07-16T20:32:38.677741"
     },
     "USDJPY.FOREX": {
       "error": true,
       "name": "USD/JPY",
-      "updated": "2026-07-16T20:07:05.353722"
+      "updated": "2026-07-16T20:32:38.677815"
     },
     "EURUSD.FOREX": {
       "error": true,
       "name": "USD/EUR",
-      "updated": "2026-07-16T20:07:05.353779"
+      "updated": "2026-07-16T20:32:38.677885"
     },
     "US10Y.INDX": {
       "error": true,
       "name": "美国10年期国债收益率",
-      "updated": "2026-07-16T20:07:05.353850"
+      "updated": "2026-07-16T20:32:38.677964"
     },
     "US30Y.INDX": {
       "error": true,
       "name": "美国30年期国债收益率",
-      "updated": "2026-07-16T20:07:05.353910"
+      "updated": "2026-07-16T20:32:38.678035"
     },
     "HIBOR1M": {
       "price": 2.82821,
       "change_pct": 0,
       "prev_close": 2.82821,
       "name": "香港1个月HIBOR",
-      "updated": "2026-07-16T20:07:14.079451",
+      "updated": "2026-07-16T20:32:47.720573",
       "unit": "%",
       "icon": "🇭🇰",
       "category": "rates"
