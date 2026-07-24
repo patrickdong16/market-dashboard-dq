@@ -1,62 +1,62 @@
 {
-  "updated_at": "2026-07-24T14:50:03.436343",
+  "updated_at": "2026-07-24T16:33:28.332193",
   "assets": {
     "XAUUSD": {
       "error": true,
       "name": "黄金",
-      "updated": "2026-07-24T14:50:06.005719"
+      "updated": "2026-07-24T16:33:30.963895"
     },
     "GLD.US": {
       "error": true,
       "name": "黄金ETF",
-      "updated": "2026-07-24T14:50:06.006176"
+      "updated": "2026-07-24T16:33:30.964321"
     },
     "XAGUSD": {
       "error": true,
       "name": "白银",
-      "updated": "2026-07-24T14:50:08.276614"
+      "updated": "2026-07-24T16:33:33.431987"
     },
     "SLV.US": {
       "error": true,
       "name": "白银ETF",
-      "updated": "2026-07-24T14:50:08.276987"
+      "updated": "2026-07-24T16:33:33.432176"
     },
     "HG=F": {
-      "price": 6.335000038146973,
-      "change_pct": 0.47581618755181965,
+      "price": 6.367000102996826,
+      "change_pct": 0.9833509333265166,
       "prev_close": 6.304999828338623,
       "name": "铜",
-      "updated": "2026-07-24T14:50:08.598072",
+      "updated": "2026-07-24T16:33:34.193619",
       "unit": "USD/吨",
       "icon": "🔶",
       "category": "metals"
     },
     "NICK.L": {
-      "price": 15.140000343322754,
-      "change_pct": 1.1693965182125348,
+      "price": 15.114999771118164,
+      "change_pct": 1.0023362312116921,
       "prev_close": 14.96500015258789,
       "name": "镍",
-      "updated": "2026-07-24T14:50:08.665316",
+      "updated": "2026-07-24T16:33:34.439933",
       "unit": "USD (ETC)",
       "icon": "⚙️",
       "category": "metals"
     },
     "CL=F": {
-      "price": 89.83000183105469,
-      "change_pct": -2.559931172419181,
+      "price": 88.48999786376953,
+      "change_pct": -4.013455341850493,
       "prev_close": 92.19000244140625,
       "name": "WTI原油",
-      "updated": "2026-07-24T14:50:08.724522",
+      "updated": "2026-07-24T16:33:34.654717",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
     },
     "BZ=F": {
-      "price": 97.33000183105469,
-      "change_pct": -3.3369753986318766,
+      "price": 96.12999725341797,
+      "change_pct": -4.5287566564931305,
       "prev_close": 100.69000244140625,
       "name": "布伦特原油",
-      "updated": "2026-07-24T14:50:08.786260",
+      "updated": "2026-07-24T16:33:34.906502",
       "unit": "USD/桶",
       "icon": "🛢️",
       "category": "commodities"
@@ -64,52 +64,47 @@
     "BTC-USD.CC": {
       "error": true,
       "name": "BTC",
-      "updated": "2026-07-24T14:50:08.786603"
+      "updated": "2026-07-24T16:33:34.906903"
     },
     "ETH-USD.CC": {
       "error": true,
       "name": "ETH",
-      "updated": "2026-07-24T14:50:08.786711"
+      "updated": "2026-07-24T16:33:34.906986"
     },
     "USDCNY.FOREX": {
       "error": true,
       "name": "USD/CNY",
-      "updated": "2026-07-24T14:50:08.786814"
+      "updated": "2026-07-24T16:33:34.907055"
     },
     "USDJPY.FOREX": {
       "error": true,
       "name": "USD/JPY",
-      "updated": "2026-07-24T14:50:08.786952"
+      "updated": "2026-07-24T16:33:34.907120"
     },
     "EURUSD.FOREX": {
       "error": true,
       "name": "USD/EUR",
-      "updated": "2026-07-24T14:50:08.787049"
+      "updated": "2026-07-24T16:33:34.907179"
     },
     "US10Y.INDX": {
       "error": true,
       "name": "美国10年期国债收益率",
-      "updated": "2026-07-24T14:50:08.787159"
+      "updated": "2026-07-24T16:33:34.907250"
     },
     "US30Y.INDX": {
       "error": true,
       "name": "美国30年期国债收益率",
-      "updated": "2026-07-24T14:50:08.787254"
+      "updated": "2026-07-24T16:33:34.907309"
     },
     "HIBOR1M": {
-      "price": 2.70619,
-      "change_pct": 0,
-      "prev_close": 2.70619,
+      "error": true,
       "name": "香港1个月HIBOR",
-      "updated": "2026-07-24T14:50:26.172443",
-      "unit": "%",
-      "icon": "🇭🇰",
-      "category": "rates"
+      "updated": "2026-07-24T16:34:12.074210"
     }
   },
   "meta": {
     "total_assets": 16,
-    "successful_fetches": 5,
-    "failed_fetches": 11
+    "successful_fetches": 4,
+    "failed_fetches": 12
   }
 }
