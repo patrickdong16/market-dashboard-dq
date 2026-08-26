@@ -5,7 +5,7 @@ A real-time market dashboard displaying precious metals, commodities, cryptocurr
 ## Features
 
 - **Real-time price reads** via Vercel API routes
-- **Open-time and in-page refreshes** for traditional assets via real-time API routes
+- **Open-time and manual refreshes** for prices via real-time API routes
 - **Interactive sparklines** showing 7-day price trends
 - **Responsive design** with zinc dark theme
 - **Live connection status** indicator
@@ -140,7 +140,7 @@ This project is designed for **GitHub Pages** deployment:
 1. **Frontend** loads the current asset config and calls Vercel API routes
 2. **`/api/quotes`** fetches current prices from EODHD/Yahoo sources
 3. **`/api/chart`** fetches chart history on demand
-4. **Frontend** refreshes visible prices while the page is open
+4. **Frontend** refreshes prices when the page opens or the user refreshes
 5. **Update Market Prices** remains manual-only for legacy `data/*.json` refreshes
 
 ## Error Handling

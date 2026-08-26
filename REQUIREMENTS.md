@@ -33,7 +33,7 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 
 ### 2. 数据实时性
 - **数字货币**：Vercel Serverless API 读取 EODHD/Yahoo 数据
-- **其他品种**：Vercel Serverless API 读取 EODHD/Yahoo/HKMA 等数据，前端打开、下拉刷新和页面内可见状态刷新时重新拉取
+- **其他品种**：Vercel Serverless API 读取 EODHD/Yahoo/HKMA 等数据，前端打开页面或用户刷新时重新拉取
 - 不再依赖 GitHub Actions 定时抓取；`Update Market Prices` workflow 只允许手动触发，不能定时 push `data/` 导致 Vercel 反复 production redeploy
 
 ### 3. 列表页（主页）

@@ -435,7 +435,6 @@
     <script>
         // Configuration - Auto-detect environment
         const API_BASE_URL = ''; // Same-origin: Vercel serves both static + API
-        const UPDATE_INTERVAL = 30000; // 30 seconds
 
         class MarketDashboard {
             constructor() {
@@ -444,7 +443,6 @@
                 this.websocket = null;
                 this.chart = null;
                 this.currentSymbol = null;
-                this.updateTimer = null;
                 this.init();
             }
 
@@ -455,8 +453,6 @@
                     this.setupEventListeners();
                     await this.loadData();
                     this.renderList();
-                    this.setupWebSocket();
-                    this.startUpdateTimer();
                     this.updateStatus('online');
                 } catch (error) {
                     console.error('Init error:', error);
@@ -725,26 +721,6 @@
                     }
                 });
                 ctx.stroke();
-            }
-
-            setupWebSocket() {
-                // WebSocket removed — all data fetched via EODHD/Yahoo REST APIs
-                // Periodic polling via startUpdateTimer() handles refreshes
-            }
-
-            startUpdateTimer() {
-                this.updateTimer = setInterval(() => {
-                    this.loadData().then(() => {
-                        if (this.getCurrentView() === 'list') {
-                            this.renderList();
-                        } else if (this.currentSymbol) {
-                            // Update detail page price header
-                            this.updateDetailPrice(this.currentSymbol);
-                        }
-                    }).catch(error => {
-                        console.error('Update error:', error);
-                    });
-                }, UPDATE_INTERVAL);
             }
 
             updateDetailPrice(symbol) {
