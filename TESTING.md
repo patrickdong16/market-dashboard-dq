@@ -129,6 +129,8 @@ curl "https://market-dashboard-dq.vercel.app/api/quotes?symbols=CL%3DF,BZ%3DF&so
 - [ ] Vercel API 可访问
 - [ ] 前端成功调用 Vercel API（无 CORS 错误）
 - [ ] 所有品种有数据
+- [ ] `Update Market Prices` workflow 没有 `schedule` 触发器，只保留 `workflow_dispatch`
+- [ ] 数据-only commit 不应作为自动生产刷新机制；行情实时性由 `/api/quotes`、`/api/chart` 和前端轮询验证
 
 ### 性能
 - [ ] 首次加载 < 3 秒（Lighthouse 测试）

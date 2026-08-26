@@ -1,11 +1,9 @@
 name: Update Market Prices
 
 on:
-  schedule:
-    # 每 15 分钟更新一次数据
-    - cron: '*/15 * * * *'
-  
-  # 支持手动触发
+  # Manual refresh only. The live dashboard reads real-time data through
+  # /api/quotes and /api/chart; scheduled data commits caused production
+  # redeploy churn and transient availability risk.
   workflow_dispatch:
 
 permissions:

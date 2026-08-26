@@ -34,7 +34,7 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 ### 2. 数据实时性
 - **数字货币**：Binance WebSocket 真实时
 - **其他品种**：Vercel Serverless 代理 Yahoo Finance API，前端 30 秒轮询
-- 不再依赖 GitHub Actions 定时抓取
+- 不再依赖 GitHub Actions 定时抓取；`Update Market Prices` workflow 只允许手动触发，不能定时 push `data/` 导致 Vercel 反复 production redeploy
 
 ### 3. 列表页（主页）
 Yahoo Finance 风格紧凑行情列表：

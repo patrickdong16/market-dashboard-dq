@@ -162,3 +162,4 @@ market-dashboard-api/                # Vercel (API 代理)
 - 镍数据可能不完整，需测试多个 symbol
 - Binance WS 在部分网络环境可能受限
 - Vercel 免费版有冷启动延迟（~500ms），可接受
+- `data/latest.json` 和 `data/history.json` 只是旧版/手动刷新遗留数据；实时页面不得依赖 scheduled GitHub Action 提交这些文件。生产稳定性优先，避免数据-only commit 高频触发 Vercel production redeploy。
