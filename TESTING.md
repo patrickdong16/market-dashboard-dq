@@ -89,9 +89,9 @@ curl "https://market-dashboard-dq.vercel.app/api/quotes?symbols=CL%3DF,BZ%3DF&so
 - [ ] 返回按钮回列表
 - [ ] 浏览器后退也能回列表
 
-### Binance WebSocket
-- [ ] BTC/ETH 价格实时跳动
-- [ ] 断网后重连
+### Crypto API
+- [ ] BTC/ETH 打开页面时显示最新 quote
+- [ ] 下拉刷新后 BTC/ETH quote 重新拉取
 - [ ] Crypto 详情页 K 线显示
 
 ### PWA

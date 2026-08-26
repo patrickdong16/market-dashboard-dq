@@ -14,14 +14,14 @@
 │  │  └──────────┘  └─────────────────┘  │   │
 │  └──────────┬──────────────┬───────────┘   │
 │             │              │                │
-│      30s 轮询          WebSocket           │
-│             ↓              ↓                │
-│  ┌──────────────┐  ┌──────────────┐        │
-│  │ Vercel API   │  │  Binance WS  │        │
-│  │ (代理Yahoo)  │  │  (直连)      │        │
-│  └──────┬───────┘  └──────────────┘        │
+│      页面加载/刷新/可见状态刷新             │
+│             ↓                               │
+│  ┌──────────────┐                          │
+│  │ Vercel API   │                          │
+│  │ quotes/chart │                          │
+│  └──────┬───────┘                          │
 │         ↓                                   │
-│  Yahoo Finance API                          │
+│  EODHD / Yahoo / HKMA / HKAB                │
 └─────────────────────────────────────────────┘
 ```
 
@@ -54,9 +54,8 @@
 
 #### 列表视图
 - 加载 `config.json` 获取品种配置
-- 调用 Vercel `/api/quotes` 获取所有 Yahoo 品种报价
-- Binance WebSocket 获取 crypto 实时价格
-- 30 秒定时轮询非 crypto 数据
+- 调用 Vercel `/api/quotes` 获取所有品种报价
+- 打开页面、下拉刷新和页面内可见状态刷新时重新拉取当前 quote
 - 每行渲染：icon + name + price + change% + sparkline (Canvas)
 - 点击行 → `location.hash = '#/detail/{symbol}'`
 
@@ -77,12 +76,10 @@
 - 数据源：quotes API 中附带的 5 日走势
 - 涨 emerald / 跌 red
 
-### 3. Binance WebSocket
-- 连接 `wss://stream.binance.com:9443/ws`
-- 订阅 `btcusdt@ticker` + `ethusdt@ticker`
-- 实时更新列表中的 crypto 行
-- 在详情页：如果是 crypto，用 Binance Klines REST API 获取 K 线数据
-- 自动重连（3 秒延迟）
+### 3. Crypto Data
+- BTC/ETH 与其他品种一致，经 `/api/quotes` 获取当前 quote
+- 详情页经 `/api/chart` 获取 K 线数据
+- 前端不再维护浏览器直连 WebSocket
 
 ### 4. PWA 配置
 
@@ -160,6 +157,6 @@ market-dashboard-api/                # Vercel (API 代理)
 ## 已知限制
 - Yahoo Finance 非官方 API，可能变更（但多年稳定）
 - 镍数据可能不完整，需测试多个 symbol
-- Binance WS 在部分网络环境可能受限
+- 上游行情 API 可能有网络波动或限流，需保留 fallback 和错误展示
 - Vercel 免费版有冷启动延迟（~500ms），可接受
 - `data/latest.json` 和 `data/history.json` 只是旧版/手动刷新遗留数据；实时页面不得依赖 scheduled GitHub Action 提交这些文件。生产稳定性优先，避免数据-only commit 高频触发 Vercel production redeploy。

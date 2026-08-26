@@ -4,8 +4,8 @@ A real-time market dashboard displaying precious metals, commodities, cryptocurr
 
 ## Features
 
-- **Real-time crypto prices** via Binance WebSocket
-- **Automated data updates** for traditional assets every 15 minutes via GitHub Actions
+- **Real-time price reads** via Vercel API routes
+- **Open-time and in-page refreshes** for traditional assets via real-time API routes
 - **Interactive sparklines** showing 7-day price trends
 - **Responsive design** with zinc dark theme
 - **Live connection status** indicator
@@ -13,9 +13,9 @@ A real-time market dashboard displaying precious metals, commodities, cryptocurr
 
 ## Data Sources
 
-- **Cryptocurrencies**: Binance WebSocket (real-time)
-- **Metals & Commodities**: Yahoo Finance (15-min intervals)
-- **Forex**: Yahoo Finance (15-min intervals)
+- **Cryptocurrencies**: EODHD/Yahoo via API routes
+- **Metals & Commodities**: Yahoo Finance/EODHD via API routes
+- **Forex**: Yahoo Finance/EODHD via API routes
 
 ## Asset Categories
 
@@ -43,14 +43,14 @@ A real-time market dashboard displaying precious metals, commodities, cryptocurr
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   index.html    │    │  GitHub Actions  │    │  Binance API    │
-│   (Frontend)    │◄──►│  (Data Fetcher)  │◄──►│  (WebSocket)    │
+│   index.html    │    │  Vercel API      │    │ Market Data APIs│
+│   (Frontend)    │◄──►│ quotes / chart   │◄──►│ EODHD / Yahoo   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                        │                        │
          ▼                        ▼                        │
 ┌─────────────────┐    ┌──────────────────┐               │
-│  data/latest.   │    │   Yahoo Finance  │               │
-│  json           │    │   (yfinance)     │               │
+│  Manual legacy  │    │   GitHub Action  │               │
+│  data/*.json    │    │ workflow_dispatch│               │
 └─────────────────┘    └──────────────────┘               │
          │                                                 │
          └─────────────────────────────────────────────────┘
@@ -71,7 +71,7 @@ The dashboard is driven by `config.json`, making it easy to add new assets:
         {
           "name": "Asset Name",
           "symbol": "SYMBOL",
-          "source": "yahoo|binance",
+          "source": "eodhd|eodhd_eod|yahoo|hkma_hibor",
           "unit": "USD",
           "icon": "📊"
         }
@@ -132,16 +132,16 @@ This project is designed for **GitHub Pages** deployment:
 
 1. Push to GitHub
 2. Enable GitHub Pages (Settings → Pages → Source: Deploy from branch → main)
-3. The GitHub Action will automatically update data every 15 minutes
-4. Manual updates: Actions → Update Market Prices → Run workflow
+3. The live dashboard refreshes prices through `/api/quotes` and `/api/chart` when the page loads or refreshes
+4. Manual legacy data refresh: Actions → Update Market Prices → Run workflow
 
 ## Data Update Flow
 
-1. **GitHub Actions** runs every 15 minutes
-2. **fetch_prices.py** queries Yahoo Finance and Binance APIs
-3. **data/latest.json** is updated with current prices
-4. **Frontend** polls latest.json every 30 seconds
-5. **WebSocket** provides real-time crypto updates
+1. **Frontend** loads the current asset config and calls Vercel API routes
+2. **`/api/quotes`** fetches current prices from EODHD/Yahoo sources
+3. **`/api/chart`** fetches chart history on demand
+4. **Frontend** refreshes visible prices while the page is open
+5. **Update Market Prices** remains manual-only for legacy `data/*.json` refreshes
 
 ## Error Handling
 

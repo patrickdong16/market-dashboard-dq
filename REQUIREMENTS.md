@@ -11,7 +11,7 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 |---|---|
 | 价格卡片 | Yahoo 风格紧凑列表 |
 | 只有 sparkline | 点击进入日 K 线详情 |
-| GitHub Actions 15 分钟更新 | Vercel 代理 + 30 秒轮询 |
+| GitHub Actions scheduled data commit | Vercel API 打开/刷新时拉取 |
 | 普通网页 | PWA Web App 适配 |
 
 ## 核心需求
@@ -23,7 +23,7 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 |------|------|--------|
 | 贵金属 | 黄金、白银、铜（USD/吨）、镍、稀土ETF(REMX) | Yahoo Finance via Vercel |
 | 大宗商品 | WTI 原油、布伦特原油 | Yahoo Finance via Vercel |
-| 数字货币 | BTC、ETH | Binance WebSocket |
+| 数字货币 | BTC、ETH | EODHD/Yahoo via Vercel |
 | 汇率 | USD/CNY、USD/JPY、EUR/USD | EODHD/Yahoo via Vercel |
 | 利率 | US10Y、US30Y、香港1个月HIBOR | EODHD EOD / HKMA HIBOR + HKAB fallback via Vercel |
 
@@ -32,8 +32,8 @@ DQ — 常用手机查看，需要随时掌握核心资产价格和走势。
 - **香港1个月HIBOR**：主源使用 HKMA 官方公开 API `hk-interbank-ir-daily?segment=hibor.fixing`，字段 `ir_1m`；若 HKMA 超时、502 或返回超过 7 天的陈旧 fixing，fallback 到 HKAB 官方 HIBOR 页面，单位为年化百分比
 
 ### 2. 数据实时性
-- **数字货币**：Binance WebSocket 真实时
-- **其他品种**：Vercel Serverless 代理 Yahoo Finance API，前端 30 秒轮询
+- **数字货币**：Vercel Serverless API 读取 EODHD/Yahoo 数据
+- **其他品种**：Vercel Serverless API 读取 EODHD/Yahoo/HKMA 等数据，前端打开、下拉刷新和页面内可见状态刷新时重新拉取
 - 不再依赖 GitHub Actions 定时抓取；`Update Market Prices` workflow 只允许手动触发，不能定时 push `data/` 导致 Vercel 反复 production redeploy
 
 ### 3. 列表页（主页）
@@ -73,9 +73,9 @@ Yahoo Finance 风格紧凑行情列表：
 
 ## 技术约束
 - 前端：纯静态 HTML/JS，部署 GitHub Pages
-- 数据代理：Vercel Serverless Function（Python），代理 Yahoo Finance API
+- 数据代理：Vercel Serverless Function（Python），代理 EODHD/Yahoo/HKMA/HKAB 等行情源
 - K 线图：TradingView Lightweight Charts（CDN 引入）
-- Crypto：Binance WebSocket（浏览器直连）
+- Crypto：通过统一 quotes/chart API 获取
 
 ## 非需求
 - 不做交易功能
@@ -85,8 +85,8 @@ Yahoo Finance 风格紧凑行情列表：
 
 ## 成功标准
 1. 手机打开 2 秒内显示列表
-2. BTC/ETH 价格实时跳动
-3. 非 crypto 数据延迟 ≤30 秒
+2. BTC/ETH 打开或刷新页面时显示最新可用 quote
+3. 非 crypto 数据打开或刷新页面时显示最新可用 quote
 4. 点击进入 K 线图流畅，1 秒内渲染
 5. 添加到手机主屏后像原生 App
 6. 新增品种只改 config.json
